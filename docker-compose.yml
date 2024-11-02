@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:15.4
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${PS_DB}
+      POSTGRES_USER: ${PS_USER}
+      POSTGRES_PASSWORD: ${PS_PASS}
+    ports:
+      - "5432:5432"
+    volumes:
+      - database-data:/var/lib/postgresql/data
+
+volumes:
+  database-data:
