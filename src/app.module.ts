@@ -16,13 +16,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        host: configService.get('DB_HOST'),
-        port: configService.get('DB_PORT'),
-        username: configService.get('PS_USER'),
-        password: configService.get('DPS_PASS'),
-        database: configService.get('PS_DB'),
+        host: process.env.DB_HOST,
+        port: parseInt(process.env.DB_PORT, 1000),
+        username: process.env.PS_USER,
+        password: String(process.env.PS_PASS),
+        database: process.env.PS_DB,
         entities: [User],
-        synchronize: configService.get('DB_SYNCHRONIZE'),
+        synchronize: true,
       })
     }),
     ConfigModule.forRoot({
