@@ -15,7 +15,7 @@ export class AuthService {
     if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new UnauthorizedException('Invalid credentials');
     }
-    const payload = { sub: user.id, username: user.username };
+    const payload = { username: user.username, sub: user.id };
     return {
       access_token: await this.jwtService.signAsync(payload, {secret: process.env.JWT_SECRET}),
     };
@@ -26,7 +26,7 @@ export class AuthService {
     if (!user) {
       throw new HttpException('Username already taken or email alredy in use', HttpStatus.BAD_REQUEST);
     }
-    const payload = { sub: user.id, username: user.username };
+    const payload = { username: user.username, sub: user.id };
     return {
       access_token: await this.jwtService.signAsync(payload, {secret: process.env.JWT_SECRET}),
     };

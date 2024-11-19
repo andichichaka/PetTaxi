@@ -1,10 +1,10 @@
 // src/auth/auth.guard.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
-import { AuthGuard } from '../src/auth/auth.guard';
+import { JwtAuthGuard } from '../src/auth/jwt-auth.guard';
 import { JwtService } from '@nestjs/jwt';
 
 describe('AuthGuard', () => {
-  let guard: AuthGuard;
+  let guard: JwtAuthGuard;
   let jwtService: Partial<JwtService>;
 
   beforeEach(async () => {
@@ -14,12 +14,12 @@ describe('AuthGuard', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        AuthGuard,
+        JwtAuthGuard,
         { provide: JwtService, useValue: jwtService },
       ],
     }).compile();
 
-    guard = module.get<AuthGuard>(AuthGuard);
+    guard = module.get<JwtAuthGuard>(JwtAuthGuard);
   });
 
   it('should be defined', () => {
