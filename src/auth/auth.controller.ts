@@ -8,7 +8,7 @@ import {
     Request,
     UseGuards
   } from '@nestjs/common';
-  import { AuthGuard } from './auth.guard';
+  import { JwtAuthGuard } from './jwt-auth.guard';
   import { AuthService } from './auth.service';
 import { LoginDTO } from './dto/login.dto';
 import { SignUpDTO } from './dto/sign-up.dto';
@@ -28,7 +28,7 @@ import { SignUpDTO } from './dto/sign-up.dto';
         return this.authService.signUp(signUpDto.email, signUpDto.username, signUpDto.password);
     }
   
-    @UseGuards(AuthGuard)
+    @UseGuards(JwtAuthGuard)
     @Get('profile')
     getProfile(@Request() req) {
       return req.user;
