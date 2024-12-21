@@ -10,12 +10,12 @@ export class ProfileController {
   @UseGuards(JwtAuthGuard)
   @Get()
   async getProfile(@Req() req) {
-    return this.profileService.getProfile(req.sub);
+    return this.profileService.getProfile(req.user.userId);
   }
 
   @UseGuards(JwtAuthGuard)
-    @Put()
-    async updateProfile(@Req() req, @Body() updateProfileDto: UpdateProfileDto) {
-        return this.profileService.updateProfile(req.user.userId, updateProfileDto);
-    }
+  @Put()
+  async updateProfile(@Req() req, @Body() updateProfileDto: UpdateProfileDto) {
+     return this.profileService.updateProfile(req.user.userId, updateProfileDto);
+  }
 }

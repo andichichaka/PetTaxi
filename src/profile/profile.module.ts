@@ -7,10 +7,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersService } from 'src/users/users.service';
 import { User } from 'src/users/user.entity';
 import { AuthModule } from 'src/auth/auth.module';
+import { JwtService } from '@nestjs/jwt';
 
 @Module({
   imports: [UsersModule, TypeOrmModule, AuthModule], // Import UsersModule to make UserRepository available
-  providers: [ProfileService, User],
+  providers: [JwtService, ProfileService, User],
   controllers: [ProfileController]
 })
 export class ProfileModule {}

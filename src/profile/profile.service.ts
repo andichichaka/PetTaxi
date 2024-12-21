@@ -12,7 +12,7 @@ export class ProfileService {
   ) {}
 
   async getProfile(userId: number): Promise<User> {
-    return this.userRepository.findOneBy({ id: userId });
+    return this.userRepository.findOne({ where: { id: userId } });
   }
 
   async updateProfile(userId: number, updateProfileDto: UpdateProfileDto): Promise<User> {
