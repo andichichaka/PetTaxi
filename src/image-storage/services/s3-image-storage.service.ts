@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 
 @Injectable()
 export class S3ImageStorageService {
@@ -19,25 +18,48 @@ export class S3ImageStorageService {
   async uploadFile(file: Express.Multer.File, key: string): Promise<string> {
     const bucketName = process.env.S3_BUCKET_NAME;
 
-    const uploadParams = {
-      Bucket: bucketName,
-      Key: key,
-      Body: file.buffer,
-      ContentType: file.mimetype,
-    };
+    try {
+      
+      const params = {
+        Bucket: bucketName,
+        Key: key,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      };
 
-    await this.s3Client.send(new PutObjectCommand(uploadParams));
-    return `https://${bucketName}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+      const command = new PutObjectCommand(params);
+      await this.s3Client.send(command);
+
+      return `https://${bucketName}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+
+    } catch (error) {
+      console.error('Error uploading file to S3:', error);
+      throw new Error('Could not upload file to S3');
+    }
   }
 
-  async getSignedUrl(key: string): Promise<string> {
+  async deleteFile(key: string): Promise<void> {
     const bucketName = process.env.S3_BUCKET_NAME;
 
-    const command = new GetObjectCommand({
-      Bucket: bucketName,
-      Key: key,
-    });
+    try {
+      const params = {
+        Bucket: bucketName,
+        Key: key,
+      };
 
-    return await getSignedUrl(this.s3Client, command, { expiresIn: 3600 });
+      const command = new DeleteObjectCommand(params);
+      await this.s3Client.send(command);
+    } catch (error) {
+      console.error('Error deleting file from S3:', error);
+      throw new Error('Could not delete file from S3');
+    }
+  }
+
+  async replaceFile(oldKey: string | null, file: Express.Multer.File, newKey: string): Promise<string> {
+    if (oldKey) {
+      await this.deleteFile(oldKey);
+    }
+
+    return this.uploadFile(file, newKey);
   }
 }
