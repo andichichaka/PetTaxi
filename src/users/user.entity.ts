@@ -13,7 +13,7 @@ export class User{
     @Column({ unique: true })
     username: string;
 
-    @Column()
+    @Column({select: false})
     password: string;
 
     @Column({
@@ -22,6 +22,12 @@ export class User{
         default: Role.User,
       })
       role: Role;
+
+    @Column({ type: 'text', nullable: true })
+    description?: string;
+
+    @Column({ nullable: true })
+    profilePic?: string;
 
     @OneToMany(() => Post, (post) => post.user, { cascade: true })
     posts: Post[];

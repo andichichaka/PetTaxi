@@ -1,15 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import * as bcrypt from 'bcrypt';
 import { Role } from 'src/roles/enum/role.enum';
+import { S3ImageStorageService } from 'src/image-storage/services/s3-image-storage.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    private s3ImageStorageService: S3ImageStorageService,
   ) {}
 
   async createUser(email: string, username: string, password: string, role: string): Promise<User | null> {
@@ -19,25 +21,23 @@ export class UsersService {
     if (existingUser) {
         return null;
     }
+
     const hashedPassword = await bcrypt.hash(password, 12);
-    let role_from_enum: Role;
-    if(role === 'admin') {
-        role_from_enum = Role.Admin;
-    }
-    else {
-        role_from_enum = Role.User;
-    }
+    const role_from_enum: Role = role === 'admin' ? Role.Admin : Role.User;
+
     const newUser = this.usersRepository.create({ email, username, password: hashedPassword, role: role_from_enum });
-    this.usersRepository.save(newUser);
-    return newUser;
-  }       
+
+    const savedUser = await this.usersRepository.save(newUser);
+    
+    return savedUser;
+}
+
 
   async findUser(username: string): Promise<User | undefined> {
-    return this.usersRepository.findOne({ where: {username} })
+    return this.usersRepository.findOne({ where: {username}, select: ["id", "username", "email", "password", "role"]})
   }
 
   async findUserById(id: number): Promise<User | undefined> {
     return this.usersRepository.findOne({where: {id} });
   }
-
 }
