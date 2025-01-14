@@ -1,16 +1,20 @@
 // src/posts/post.entity.ts
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, Not } from 'typeorm';
 import { User } from '../users/user.entity';
 import { ServiceType } from './enum/service-type.enum';
 import { AnimalType } from './enum/animal-type.enum';
 import { AnimalSize } from './enum/animal-size.enum';
+import { empty } from 'rxjs';
 
 @Entity()
 export class Post {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column('simple-array')
+  @Column({
+    type: 'simple-array',
+    nullable: true,
+  })
   imagesUrl: string[];
 
   @Column('text')
@@ -20,23 +24,20 @@ export class Post {
   user: User;
 
   @Column({
-    type: "enum",
-    enum: ServiceType,
-    default: ServiceType.Other
+    type: "simple-array",
+    enum: ServiceType
   })
-  serviceType: ServiceType;
+  serviceTypes: ServiceType[];
 
   @Column({
     type: "enum",
-    enum: AnimalType,
-    default: AnimalType.Both
+    enum: AnimalType
   })
   animalType: AnimalType;
 
   @Column({
-    type: "enum",
-    enum: AnimalSize,
-    default: AnimalSize.Other
+    type: "simple-array",
+    enum: AnimalSize
   })
-  animalSize: AnimalSize;
+  animalSizes: AnimalSize[];
 }

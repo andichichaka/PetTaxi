@@ -5,21 +5,20 @@ import { AnimalType } from '../enum/animal-type.enum';
 import { AnimalSize } from '../enum/animal-size.enum';
 
 export class CreatePostDto {
-  @IsArray()
-  @ArrayNotEmpty()
-  @IsString({ each: true })
-  imagesUrl?: string[];
-
   @IsString()
   @IsNotEmpty()
   description: string;
 
-  @IsEnum(ServiceType)
-  serviceType: ServiceType;
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsEnum(ServiceType, { each: true })
+  serviceTypes: ServiceType[];
 
   @IsEnum(AnimalType)
   animalType: AnimalType;
 
-  @IsEnum(AnimalSize)
-  animalSize: AnimalSize;
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsEnum(AnimalSize, { each: true })
+  animalSizes: AnimalSize[];
 }
