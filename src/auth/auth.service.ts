@@ -10,26 +10,59 @@ export class AuthService {
     private jwtService: JwtService
   ) {}
 
-  async signIn(username: string, password: string): Promise<{ access_token: string }> {
+  async signIn(username: string, password: string): Promise<any> {
     const user = await this.usersService.findUser(username);
-    console.log(user);
+
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException({
+        success: false,
+        message: 'Invalid credentials',
+      });
     }
+
     const payload = { username: user.username, sub: user.id, roles: user.role };
+    const token = await this.jwtService.signAsync(payload, { secret: process.env.JWT_SECRET });
+
     return {
-      access_token: await this.jwtService.signAsync(payload, {secret: process.env.JWT_SECRET}),
+      success: true,
+      message: 'Login successful',
+      access_token: token,
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+      },
     };
   }
 
   async signUp(email: string, username: string, password: string, role?: string): Promise<any> {
     const user = await this.usersService.createUser(email, username, password, role);
+
     if (!user) {
-      throw new HttpException('Username already taken or email alredy in use', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Username already taken or email already in use',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
     }
+
     const payload = { username: user.username, sub: user.id, roles: user.role };
+    const token = await this.jwtService.signAsync(payload, { secret: process.env.JWT_SECRET });
+    console.log(token);
+
     return {
-      access_token: await this.jwtService.signAsync(payload, {secret: process.env.JWT_SECRET}),
+      success: true,
+      message: 'User registered successfully',
+      access_token: token,
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+      },
     };
   }
 }
