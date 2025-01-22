@@ -5,6 +5,8 @@ import { Repository } from 'typeorm';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { S3ImageStorageService } from 'src/image-storage/services/s3-image-storage.service';
 import { Role } from 'src/roles/enum/role.enum';
+import { access } from 'fs';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class ProfileService {
@@ -12,6 +14,7 @@ export class ProfileService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private s3ImageStorageService: S3ImageStorageService,
+    private jwtService: JwtService,
   ) {}
 
   async getProfile(userId: number): Promise<any> {
@@ -83,8 +86,12 @@ export class ProfileService {
     user.role = validRole;
     const newUser = await this.userRepository.save(user);
 
+    const payload = { username: newUser.username, sub: newUser.id, roles: newUser.role };
+    const token = await this.jwtService.signAsync(payload, { secret: process.env.JWT_SECRET });
+
     return {
         id: newUser.id,
+        access_token: token,
         username: newUser.email,
         email: newUser.username,
         role: newUser.role,

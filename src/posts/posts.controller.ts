@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Req, Put, Param, Delete, UploadedFiles, UseInterceptors, Get } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Req, Put, Param, Delete, UploadedFiles, UseInterceptors, Get, Query } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { Post as PostEntity } from './post.entity';
 
@@ -14,7 +14,6 @@ import { Role } from '../roles/enum/role.enum';
 import { ServiceType } from './enum/service-type.enum';
 import { AnimalType } from './enum/animal-type.enum';
 import { AnimalSize } from './enum/animal-size.enum';
-import { SearchPostsDto } from './dto/search-post.dto';
 
 @Controller('posts')
 export class PostsController {
@@ -27,8 +26,13 @@ export class PostsController {
     @Roles(Role.Admin)
     @UseInterceptors(FilesInterceptor('images'))
     async createPost(@Req() req, @Body() createPostDto: CreatePostDto) {
-    if (createPostDto.serviceTypes) {
-      createPostDto.serviceTypes = createPostDto.serviceTypes as ServiceType[];
+    if (createPostDto.services) {
+      createPostDto.services = createPostDto.services.map(service => {
+        if(service.serviceType) {
+          service.serviceType = service.serviceType as ServiceType;
+        }
+        return service;
+      });
     }
     if(createPostDto.animalType) {
       createPostDto.animalType = createPostDto.animalType as AnimalType;
@@ -50,20 +54,35 @@ async addImagesToPost(
   return this.postsService.addImagesToPost(postId, images);
 }
 
-  @Post('upload')
-  @UseInterceptors(FilesInterceptor('images'))
-  async testUpload(@UploadedFiles() files: Array<Express.Multer.File>) {
-    console.log('Files received:', files);
-    return { files };
+@Put('update/:id')
+@Roles(Role.Admin)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@UseInterceptors(FilesInterceptor('images'))
+async updatePost(
+  @Param('id') id: number,
+  @Body() updatePostDto: UpdatePostDto,
+  @UploadedFiles() images: Array<Express.Multer.File>,
+) {
+  if (updatePostDto.services) {
+    updatePostDto.services = updatePostDto.services.map((service) => ({
+      ...service,
+      serviceType: service.serviceType as ServiceType,
+    }));
   }
 
-  @Put(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin)
-  @UseInterceptors(FilesInterceptor('images'))
-  async updatePost(@Param('id') id: number, @Body() updatePostDto: UpdatePostDto, @UploadedFiles() images: Array<Express.Multer.File>) {
-    return this.postsService.update(id, updatePostDto, images);
+  if (updatePostDto.animalType) {
+    updatePostDto.animalType = updatePostDto.animalType as AnimalType;
   }
+
+  if (updatePostDto.animalSizes) {
+    updatePostDto.animalSizes = updatePostDto.animalSizes.map(
+      (size) => size as AnimalSize,
+    );
+  }
+
+  return this.postsService.update(id, updatePostDto, images);
+}
+
 
   @Get("get-all")
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -72,10 +91,18 @@ async addImagesToPost(
     return this.postsService.findAll();
   }
 
-  @Post('search')
-  async searchPosts(@Body() searchPostsDto: SearchPostsDto): Promise<PostEntity[]> {
-    const { keywords, serviceTypes, animalType, animalSizes } = searchPostsDto;
-
-    return this.postsService.searchPosts(keywords, serviceTypes, animalType, animalSizes);
+  @Get('search')
+async searchPosts(
+  @Query('keywords') keywords?: string,
+  @Query('serviceTypes') serviceTypes?: string[],
+  @Query('animalType') animalType?: string,
+  @Query('animalSizes') animalSizes?: string[]
+): Promise<PostEntity[]> {
+  return this.postsService.searchPosts(
+    keywords,
+    serviceTypes ? (Array.isArray(serviceTypes) ? serviceTypes.map(type => type as ServiceType) : [serviceTypes as ServiceType]) : undefined,
+    animalType ? animalType as AnimalType : undefined,
+    animalSizes ? (Array.isArray(animalSizes) ? animalSizes.map(size => size as AnimalSize) : [animalSizes as AnimalSize]) : undefined
+  );
 }
 }
