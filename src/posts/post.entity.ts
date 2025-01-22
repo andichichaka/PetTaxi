@@ -1,10 +1,11 @@
 // src/posts/post.entity.ts
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, Not } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, Not, OneToMany } from 'typeorm';
 import { User } from '../users/user.entity';
 import { ServiceType } from './enum/service-type.enum';
 import { AnimalType } from './enum/animal-type.enum';
 import { AnimalSize } from './enum/animal-size.enum';
-import { empty } from 'rxjs';
+import { Service } from './service.entity';
+import { Booking } from 'src/booking/booking.entity';
 
 @Entity()
 export class Post {
@@ -14,20 +15,18 @@ export class Post {
   @Column({
     type: 'simple-array',
     nullable: true,
+    default: ''
   })
   imagesUrl: string[];
 
   @Column('text')
   description: string;
 
-  @ManyToOne(() => User, (user) => user.posts)
+  @ManyToOne(() => User, (user) => user.posts, { onDelete: 'CASCADE' })
   user: User;
 
-  @Column({
-    type: "simple-array",
-    enum: ServiceType
-  })
-  serviceTypes: ServiceType[];
+  @OneToMany(() => Service, (service) => service.post, { cascade: ['insert'], eager: true })
+  services: Service[];
 
   @Column({
     type: "enum",
@@ -35,9 +34,6 @@ export class Post {
   })
   animalType: AnimalType;
 
-  @Column({
-    type: "simple-array",
-    enum: AnimalSize
-  })
+  @Column('text', { array: true, nullable: false, default: '{}' })
   animalSizes: AnimalSize[];
 }

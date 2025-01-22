@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DeepPartial, Repository } from 'typeorm';
 import { Post } from './post.entity';
@@ -9,24 +9,58 @@ import { S3ImageStorageService } from 'src/image-storage/services/s3-image-stora
 import { ServiceType } from './enum/service-type.enum';
 import { AnimalType } from './enum/animal-type.enum';
 import { AnimalSize } from './enum/animal-size.enum';
+import { Service } from './service.entity';
+import { plainToClass } from 'class-transformer';
+import { PostResponseDto } from './dto/post.response.dto';
 
 @Injectable()
 export class PostsService {
   constructor(
     @InjectRepository(Post)
     private postsRepository: Repository<Post>,
+    @InjectRepository(Service)
+    private servicesRepository: Repository<Service>,
     private s3Service: S3ImageStorageService,
   ) {}
 
-  async create(createPostDto: CreatePostDto, user: User): Promise<Post> {
+async create(createPostDto: CreatePostDto, user: User): Promise<any> {
+    const { description, services, animalType, animalSizes } = createPostDto;
+
     const post = this.postsRepository.create({
-      ...createPostDto,
-      user: user,
+        description,
+        animalType,
+        animalSizes,
+        user,
     });
 
-    return this.postsRepository.save(post);
-  }
+    const savedPost = await this.postsRepository.save(post);
 
+    const savedServices = await Promise.all(
+        services.map((service) =>
+            this.servicesRepository.save({
+                serviceType: service.serviceType,
+                price: service.price,
+                unavailableDates: service.unavailableDates || [],
+                post: savedPost,
+            }),
+        ),
+    );
+
+    savedPost.services = savedServices;
+
+    const response: PostResponseDto = {
+      id: savedPost.id,
+      description: savedPost.description,
+      animalType: savedPost.animalType,
+      animalSizes: savedPost.animalSizes,
+      user: savedPost.user,
+      services: savedServices.map(({ post, ...service }) => service),
+  };
+
+  return response;
+}
+
+ 
   async addImagesToPost(postId: number, imageFiles: Express.Multer.File[]): Promise<Post> {
     const post = await this.postsRepository.findOne({ where: { id: postId } });
     if (!post) {
@@ -41,36 +75,71 @@ export class PostsService {
         )
         : [];
 
-    post.imagesUrl = [...(post.imagesUrl || []), ...imageUrls];
+    post.imagesUrl.push(...imageUrls);
     return this.postsRepository.save(post);
 }
 
 
-  async update(id: number, updatePostDto: UpdatePostDto, imageFiles: Express.Multer.File[]): Promise<Post> {
-    console.log(`Updating post with ID: ${id}`);
-    const existingPost = await this.postsRepository.findOne({ where: { id } });
-    if (!existingPost) throw new NotFoundException('Post not found');
+async update(
+  id: number,
+  updatePostDto: UpdatePostDto,
+  imageFiles: Express.Multer.File[],
+): Promise<Post> {
+  console.log(`Updating post with ID: ${id}`);
 
-    console.log('Existing post images:', existingPost.imagesUrl);
+  const existingPost = await this.postsRepository.findOne({
+    where: { id },
+    relations: ['services'],
+  });
 
-    const imageUrls = imageFiles.length > 0
-      ? await Promise.all(
-          imageFiles.map(file =>
-            this.s3Service.uploadFile(file, `posts/${Date.now()}_${file.originalname}`)
-          )
-        )
-      : existingPost.imagesUrl;
-
-    console.log('Updated image URLs:', imageUrls);
-
-    const updatedPost = this.postsRepository.create({
-      ...existingPost,
-      ...updatePostDto,
-      imagesUrl: imageUrls,
-    });
-
-    return this.postsRepository.save(updatedPost);
+  if (!existingPost) {
+    throw new NotFoundException('Post not found');
   }
+
+  console.log('Existing post:', existingPost);
+
+  const updatedImageUrls = await Promise.all(
+    imageFiles.map((file, index) => {
+      const oldKey = existingPost.imagesUrl[index]
+        ? this.extractS3Key(existingPost.imagesUrl[index])
+        : null;
+      const newKey = `posts/${id}-${Date.now()}-${file.originalname}`;
+
+      return this.s3Service.replaceFile(oldKey, file, newKey);
+    }),
+  );
+
+  console.log('Updated image URLs:', updatedImageUrls);
+
+  if (updatePostDto.services) {
+    await this.servicesRepository.delete({ post: existingPost });
+
+    const updatedServices = updatePostDto.services.map((serviceDto) =>
+      this.servicesRepository.create({
+        ...serviceDto,
+        post: existingPost,
+      }),
+    );
+
+    await this.servicesRepository.save(updatedServices);
+  }
+
+  const updatedPost = this.postsRepository.create({
+    ...existingPost,
+    ...updatePostDto,
+    imagesUrl: updatedImageUrls.length > 0 ? updatedImageUrls : existingPost.imagesUrl, // Retain existing images if none are provided
+  });
+
+  return this.postsRepository.save(updatedPost);
+}
+
+private extractS3Key(url: string): string {
+  const bucketName = process.env.S3_BUCKET_NAME;
+  const region = process.env.AWS_REGION;
+  return url.replace(`https://${bucketName}.s3.${region}.amazonaws.com/`, '');
+}
+
+
 
   async remove(postId: number): Promise<void> {
     console.log(`Removing post with ID: ${postId}`);
@@ -99,18 +168,6 @@ export class PostsService {
     return posts;
   }
 
-  async uploadImages(imageFiles: Express.Multer.File[]): Promise<string[]> {
-    const imageUrls = await Promise.all(
-      imageFiles.map(file =>
-        this.s3Service.uploadFile(file, `posts/${Date.now()}_${file.originalname}`)
-      )
-    );
-
-    await this.postsRepository.save(imageUrls.map(url => ({ imagesUrl: [url] } as DeepPartial<Post>)));
-
-    return imageUrls;
-  }
-
   async searchPosts(
     keywords?: string, 
     serviceTypes?: ServiceType[], 
@@ -126,8 +183,8 @@ export class PostsService {
   
     // Filter by keywords in description
     if (keywords) {
-      queryBuilder.andWhere('post.description ILIKE :keywords', { keywords: `%${keywords}%` });
-    }
+      queryBuilder.andWhere('LOWER(post.description) LIKE :keywords', { keywords: `%${keywords.toLowerCase()}%` });
+  }
   
     // Filter by service types
     if (serviceTypes && serviceTypes.length > 0) {

@@ -7,10 +7,12 @@ import { Post } from './post.entity';
 import { UsersModule } from 'src/users/users.module';
 import { AuthModule } from 'src/auth/auth.module';
 import { JwtService } from '@nestjs/jwt';
+import { Service } from './service.entity';
 
 @Module({
-  imports: [AuthModule, UsersModule, TypeOrmModule.forFeature([Post])],
+  imports: [AuthModule, UsersModule, TypeOrmModule.forFeature([Post, Service])],
   providers: [JwtService, PostsService, S3ImageStorageService],
-  controllers: [PostsController]
+  controllers: [PostsController],
+  exports: [PostsService, TypeOrmModule.forFeature([Post]), TypeOrmModule.forFeature([Service])],
 })
 export class PostsModule {}
