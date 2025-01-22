@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { LessThan, MoreThan, Repository } from 'typeorm';
 import { User } from './user.entity';
 import * as bcrypt from 'bcrypt';
 import { Role } from 'src/roles/enum/role.enum';
@@ -19,8 +19,10 @@ export class UsersService {
         where: [{ email }, { username }]
     });
     if (existingUser) {
+      if (existingUser.isEmailVerified) {
         return null;
     }
+  }
 
     const hashedPassword = await bcrypt.hash(password, 12);
     const role_from_enum: Role = role === 'admin' ? Role.Admin : Role.User;
@@ -34,7 +36,7 @@ export class UsersService {
 
 
   async findUser(username: string): Promise<User | undefined> {
-    return this.usersRepository.findOne({ where: {username}, select: ["id", "username", "email", "password", "role"]})
+    return this.usersRepository.findOne({ where: {username}, select: ["id", "username", "email", "password", "role", "isEmailVerified"] });
   }
 
   async findUserById(id: number): Promise<User | undefined> {
