@@ -5,15 +5,18 @@ import { UsersService } from './users.service';
 import { User } from './user.entity';
 import { APP_GUARD } from '@nestjs/core';
 import { RolesGuard } from 'src/roles/roles.guard';
+import { CodesCleanupService } from './codes-cleanUp.service';
+import { Code } from './code.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User])],
+  imports: [TypeOrmModule.forFeature([User, Code])],
   providers: [UsersService,
      {
       provide: APP_GUARD,
       useClass: RolesGuard,
-    }
+    },
+    CodesCleanupService
   ],
-  exports: [UsersService, TypeOrmModule.forFeature([User])]
+  exports: [UsersService, TypeOrmModule.forFeature([User, Code])],
 })
 export class UsersModule {}

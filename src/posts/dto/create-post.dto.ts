@@ -3,23 +3,24 @@ import { IsArray, IsEnum, IsNotEmpty, IsString, ArrayNotEmpty, ValidateNested } 
 import { ServiceType } from '../enum/service-type.enum';
 import { AnimalType } from '../enum/animal-type.enum';
 import { AnimalSize } from '../enum/animal-size.enum';
+import { Type } from 'class-transformer';
+import { CreateServiceDto } from './create-service.dto';
 
 export class CreatePostDto {
-  @IsArray()
-  @ArrayNotEmpty()
-  @IsString({ each: true })
-  imagesUrl?: string[];
-
   @IsString()
   @IsNotEmpty()
   description: string;
 
-  @IsEnum(ServiceType)
-  serviceType: ServiceType;
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateServiceDto)
+  services: CreateServiceDto[];
 
   @IsEnum(AnimalType)
   animalType: AnimalType;
 
-  @IsEnum(AnimalSize)
-  animalSize: AnimalSize;
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsEnum(AnimalSize, { each: true })
+  animalSizes: AnimalSize[];
 }

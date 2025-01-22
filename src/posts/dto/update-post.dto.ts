@@ -1,29 +1,35 @@
-
-import { IsArray, IsEnum, IsOptional, IsString, ValidateNested, ArrayNotEmpty } from 'class-validator';
+import {
+  IsArray,
+  IsEnum,
+  IsOptional,
+  IsString,
+  ValidateNested,
+  ArrayNotEmpty,
+  IsNotEmpty,
+} from 'class-validator';
 import { ServiceType } from '../enum/service-type.enum';
 import { AnimalType } from '../enum/animal-type.enum';
 import { AnimalSize } from '../enum/animal-size.enum';
+import { Type } from 'class-transformer';
+import { UpdateServiceDto } from './update-service.dto';
 
 export class UpdatePostDto {
-  @IsArray()
-  @IsOptional()
-  @ArrayNotEmpty()
-  @IsString({ each: true })
-  imagesUrl?: string[];
-
   @IsString()
   @IsOptional()
   description?: string;
 
-  @IsEnum(ServiceType)
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UpdateServiceDto)
   @IsOptional()
-  serviceType?: ServiceType;
+  services?: UpdateServiceDto[];
 
   @IsEnum(AnimalType)
   @IsOptional()
   animalType?: AnimalType;
 
-  @IsEnum(AnimalSize)
+  @IsArray()
   @IsOptional()
-  animalSize?: AnimalSize;
+  @IsEnum(AnimalSize, { each: true })
+  animalSizes?: AnimalSize[];
 }
