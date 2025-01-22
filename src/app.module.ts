@@ -18,9 +18,20 @@ import { JwtService } from '@nestjs/jwt';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { RolesGuard } from './roles/roles.guard';
+import { PostsController } from './posts/posts.controller';
+import { PostsService } from './posts/posts.service';
+import { Service } from './posts/service.entity';
+import { BookingModule } from './booking/booking.module';
+import { Booking } from './booking/booking.entity';
+import { BookingController } from './booking/booking.controller';
+import { BookingService } from './booking/booking.service';
+import { EmailService } from './email/email.service';
+import { ScheduleModule } from '@nestjs/schedule';
+import { Code } from './users/code.entity';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     AuthModule,
     UsersModule,
     TypeOrmModule.forRootAsync({
@@ -33,7 +44,7 @@ import { RolesGuard } from './roles/roles.guard';
         username: process.env.PS_USER,
         password: String(process.env.PS_PASS),
         database: process.env.PS_DB,
-        entities: [User, Post],
+        entities: [User, Post, Service, Booking, Code],
         synchronize: true,
       })
     }),
@@ -43,8 +54,9 @@ import { RolesGuard } from './roles/roles.guard';
     ProfileModule,
     PostsModule,
     ImageStorageModule,
+    BookingModule,
   ],
-  controllers: [AppController, ProfileController, AuthController],
+  controllers: [AppController, ProfileController, AuthController, PostsController, BookingController],
   providers: [{
     provide: APP_GUARD,
     useClass: JwtAuthGuard, // Global AuthGuard
@@ -52,7 +64,7 @@ import { RolesGuard } from './roles/roles.guard';
   {
     provide: APP_GUARD,
     useClass: RolesGuard, // Global RolesGuard
-  },JwtService, AppService, ProfileService, S3ImageStorageService],
+  },JwtService, AppService, ProfileService, S3ImageStorageService, PostsService, BookingService, EmailService],
   exports: [S3ImageStorageService],
 })
 export class AppModule {}
