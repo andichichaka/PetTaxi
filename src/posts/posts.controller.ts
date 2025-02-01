@@ -1,5 +1,5 @@
-import { Controller, Post, Body, UseGuards, Req, Put, Param, Delete, UploadedFiles, UseInterceptors, Get, Query } from '@nestjs/common';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { Controller, Post, Body, UseGuards, Req, Put, Param, Delete, UploadedFiles, UseInterceptors, Get, Query, Patch, UploadedFile } from '@nestjs/common';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { Post as PostEntity } from './post.entity';
 
 import { PostsService } from './posts.service';
@@ -57,11 +57,9 @@ async addImagesToPost(
 @Put('update/:id')
 @Roles(Role.Admin)
 @UseGuards(JwtAuthGuard, RolesGuard)
-@UseInterceptors(FilesInterceptor('images'))
 async updatePost(
   @Param('id') id: number,
   @Body() updatePostDto: UpdatePostDto,
-  @UploadedFiles() images: Array<Express.Multer.File>,
 ) {
   if (updatePostDto.services) {
     updatePostDto.services = updatePostDto.services.map((service) => ({
@@ -80,7 +78,7 @@ async updatePost(
     );
   }
 
-  return this.postsService.update(id, updatePostDto, images);
+  return this.postsService.update(id, updatePostDto);
 }
 
 
@@ -104,5 +102,20 @@ async searchPosts(
     animalType ? animalType as AnimalType : undefined,
     animalSizes ? (Array.isArray(animalSizes) ? animalSizes.map(size => size as AnimalSize) : [animalSizes as AnimalSize]) : undefined
   );
+}
+
+@Patch(':postId/images')
+@UseInterceptors(FilesInterceptor('files'))
+async updatePostImages(
+  @Param('postId') postId: number,
+  @UploadedFiles() files?: Express.Multer.File[],
+): Promise<PostEntity> {
+  return this.postsService.updatePostImages(postId, files);
+}
+
+@Delete('delete/:postId')
+async deletePost(@Param('postId') postId: number): Promise<{ message: string }> {
+  await this.postsService.remove(postId);
+  return { message: 'Post successfully deleted.' };
 }
 }

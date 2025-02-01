@@ -54,7 +54,13 @@ async create(createPostDto: CreatePostDto, user: User): Promise<any> {
       animalType: savedPost.animalType,
       animalSizes: savedPost.animalSizes,
       user: savedPost.user,
-      services: savedServices.map(({ post, ...service }) => service),
+      services: savedServices.map((service) => ({
+        id: service.id,
+        bookings: service.bookings,
+        serviceType: service.serviceType,
+        price: service.price,
+        unavailableDates: service.unavailableDates,
+    })),
   };
 
   return response;
@@ -70,7 +76,7 @@ async create(createPostDto: CreatePostDto, user: User): Promise<any> {
     const imageUrls = imageFiles.length > 0
         ? await Promise.all(
             imageFiles.map(file =>
-                this.s3Service.uploadFile(file, `posts/${Date.now()}_${file.originalname}`)
+                this.s3Service.uploadFile(file, `post-images/${Date.now()}_${file.originalname}`)
             )
         )
         : [];
@@ -83,7 +89,6 @@ async create(createPostDto: CreatePostDto, user: User): Promise<any> {
 async update(
   id: number,
   updatePostDto: UpdatePostDto,
-  imageFiles: Express.Multer.File[],
 ): Promise<Post> {
   console.log(`Updating post with ID: ${id}`);
 
@@ -95,21 +100,6 @@ async update(
   if (!existingPost) {
     throw new NotFoundException('Post not found');
   }
-
-  console.log('Existing post:', existingPost);
-
-  const updatedImageUrls = await Promise.all(
-    imageFiles.map((file, index) => {
-      const oldKey = existingPost.imagesUrl[index]
-        ? this.extractS3Key(existingPost.imagesUrl[index])
-        : null;
-      const newKey = `posts/${id}-${Date.now()}-${file.originalname}`;
-
-      return this.s3Service.replaceFile(oldKey, file, newKey);
-    }),
-  );
-
-  console.log('Updated image URLs:', updatedImageUrls);
 
   if (updatePostDto.services) {
     await this.servicesRepository.delete({ post: existingPost });
@@ -127,10 +117,67 @@ async update(
   const updatedPost = this.postsRepository.create({
     ...existingPost,
     ...updatePostDto,
-    imagesUrl: updatedImageUrls.length > 0 ? updatedImageUrls : existingPost.imagesUrl, // Retain existing images if none are provided
   });
 
   return this.postsRepository.save(updatedPost);
+}
+
+async updatePostImages(postId: number, files: Express.Multer.File[]): Promise<Post> {
+  const post = await this.postsRepository.findOne({ where: { id: postId } });
+  if (!post) {
+    throw new NotFoundException('Post not found');
+  }
+
+  // Delete existing images from S3
+  if (post.imagesUrl?.length) {
+    for (const imageUrl of post.imagesUrl) {
+      const key = this.extractS3Key(imageUrl);
+      await this.s3Service.deleteFile(key);
+    }
+  }
+
+  // 🔥 **Step 1: If no files, explicitly update DB to empty array**
+  if (!files || files.length === 0) {
+    console.log('No files provided. Removing all images from post.');
+
+    // ✅ **Force TypeORM to update immediately**
+    await this.postsRepository
+      .createQueryBuilder()
+      .update(Post)
+      .set({ imagesUrl: [] }) // 🔥 **Explicitly setting imagesUrl to an empty array**
+      .where("id = :id", { id: postId })
+      .execute();
+
+    console.log('Images removed. Fetching updated post...');
+
+    // 🔥 **Step 2: Force re-fetch from DB (clears cache)**
+    const updatedPost = await this.postsRepository.findOne({ where: { id: postId } });
+
+    console.log('Updated Post (After Delete):', updatedPost);
+    return updatedPost;
+  }
+
+  // 🔥 **Step 3: Upload new images**
+  const imageUrls = await Promise.all(
+    files.map((file, index) => {
+      const newKey = `post-images/${postId}-${Date.now()}-${index}`;
+      return this.s3Service.uploadFile(file, newKey);
+    }),
+  );
+
+  // 🔥 **Step 4: Force TypeORM to update images with new ones**
+  await this.postsRepository
+    .createQueryBuilder()
+    .update(Post)
+    .set({ imagesUrl: imageUrls })
+    .where("id = :id", { id: postId })
+    .execute();
+
+  // 🔥 **Step 5: Refetch the post to confirm update**
+  const finalPost = await this.postsRepository.findOne({ where: { id: postId } });
+  console.log('Final Updated Post:', finalPost);
+
+  return finalPost;
 }
 
 private extractS3Key(url: string): string {
@@ -139,16 +186,28 @@ private extractS3Key(url: string): string {
   return url.replace(`https://${bucketName}.s3.${region}.amazonaws.com/`, '');
 }
 
+async remove(postId: number): Promise<void> {
+  console.log(`Removing post with ID: ${postId}`);
+  const post = await this.postsRepository.findOne({ where: { id: postId } });
 
-
-  async remove(postId: number): Promise<void> {
-    console.log(`Removing post with ID: ${postId}`);
-    const result = await this.postsRepository.delete(postId);
-    if (result.affected === 0) {
-      throw new NotFoundException('Post not found');
-    }
-    console.log(`Post with ID: ${postId} successfully removed.`);
+  if (!post) {
+    throw new NotFoundException('Post not found');
   }
+
+  if (post.imagesUrl?.length) {
+    for (const url of post.imagesUrl) {
+      const key = this.extractS3Key(url);
+      await this.s3Service.deleteFile(key);
+    }
+  }
+
+  const result = await this.postsRepository.delete(postId);
+  if (result.affected === 0) {
+    throw new NotFoundException('Post not found');
+  }
+
+  console.log(`Post with ID: ${postId} successfully removed.`);
+}
 
   async findOne(id: number): Promise<Post> {
     console.log(`Fetching post with ID: ${id}`);
@@ -159,52 +218,80 @@ private extractS3Key(url: string): string {
     return post;
   }
 
-  async findAll(): Promise<Post[]> {
+  async findAll(): Promise<PostResponseDto[]> {
     console.log('Fetching all posts...');
+
     const posts = await this.postsRepository.find({
-      relations: ['user'],
+        relations: ['services', 'user'],
     });
+
     console.log(`Found ${posts.length} posts.`);
-    return posts;
+
+    const response = posts.map((post) => ({
+        id: post.id,
+        imagesUrl: post.imagesUrl,
+        description: post.description,
+        animalType: post.animalType,
+        animalSizes: post.animalSizes,
+        user: post.user,
+        services: post.services.map(({ post, ...service }) => service),
+    }));
+
+    return response;
+}
+
+
+async searchPosts(
+  keywords?: string,
+  serviceTypes?: ServiceType[],
+  animalType?: AnimalType,
+  animalSizes?: AnimalSize[]
+): Promise<Post[]> {
+  console.log('Searching posts with provided filters...');
+
+  if(!keywords && !serviceTypes && !animalType && !animalSizes) {
+      throw new BadRequestException('At least one search filter must be provided.');
   }
 
-  async searchPosts(
-    keywords?: string, 
-    serviceTypes?: ServiceType[], 
-    animalType?: AnimalType, 
-    animalSizes?: AnimalSize[]
-  ): Promise<Post[]> {
-    console.log('Searching posts with provided filters...');
-  
-    const queryBuilder = this.postsRepository.createQueryBuilder('post');
-  
-    // Include related user entity if necessary
-    queryBuilder.leftJoinAndSelect('post.user', 'user');
-  
-    // Filter by keywords in description
-    if (keywords) {
-      queryBuilder.andWhere('LOWER(post.description) LIKE :keywords', { keywords: `%${keywords.toLowerCase()}%` });
+  const queryBuilder = this.postsRepository.createQueryBuilder('post');
+
+  // Join the related tables
+  queryBuilder
+      .leftJoinAndSelect('post.user', 'user') // Include user details
+      .leftJoinAndSelect('post.services', 'service'); // Include services
+
+  // Filter by keywords in the post description
+  if (keywords) {
+      queryBuilder.andWhere('LOWER(post.description) LIKE :keywords', {
+          keywords: `%${keywords.toLowerCase()}%`,
+      });
   }
-  
-    // Filter by service types
-    if (serviceTypes && serviceTypes.length > 0) {
-      queryBuilder.andWhere('post.serviceTypes && :serviceTypes', { serviceTypes });
-    }
-  
-    // Filter by animal type
-    if (animalType) {
-      queryBuilder.andWhere('post.animalType = :animalType', { animalType });
-    }
-  
-    // Filter by animal sizes
-    if (animalSizes && animalSizes.length > 0) {
-      queryBuilder.andWhere('post.animalSizes && :animalSizes', { animalSizes });
-    }
-  
-    // Execute the query
-    const posts = await queryBuilder.getMany();
-    console.log(`Found ${posts.length} posts matching the criteria.`);
-    return posts;
+
+  // Filter by service types using the services table
+  if (serviceTypes && serviceTypes.length > 0) {
+      queryBuilder.andWhere('service.serviceType IN (:...serviceTypes)', {
+          serviceTypes,
+      });
   }
-  
+
+  // Filter by animal type
+  if (animalType) {
+      queryBuilder.andWhere('post.animalType = :animalType', {
+          animalType,
+      });
+  }
+
+  // Filter by animal sizes using PostgreSQL's array_overlap operator
+  if (animalSizes && animalSizes.length > 0) {
+      queryBuilder.andWhere(
+          `post.animalSizes && :animalSizes::text[]`,
+          { animalSizes: animalSizes } // Pass animalSizes as an array
+      );
+  }
+
+  const posts = await queryBuilder.getMany();
+  console.log(`Found ${posts.length} posts matching the criteria.`);
+  return posts;
+}
+
 }
