@@ -22,7 +22,7 @@ export class Post {
   @Column('text')
   description: string;
 
-  @ManyToOne(() => User, (user) => user.posts, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.posts, { onDelete: 'CASCADE', eager: true })
   user: User;
 
   @OneToMany(() => Service, (service) => service.post, { cascade: ['insert'], eager: true })

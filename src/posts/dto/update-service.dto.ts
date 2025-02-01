@@ -1,4 +1,4 @@
-import { IsEnum, IsNumber, IsOptional } from 'class-validator';
+import { IsArray, IsEnum, IsNumber, IsOptional } from 'class-validator';
 import { ServiceType } from '../enum/service-type.enum';
 
 export class UpdateServiceDto {
@@ -9,4 +9,8 @@ export class UpdateServiceDto {
   @IsNumber()
   @IsOptional()
   price?: number;
+
+  @IsArray()
+  @IsOptional()
+  unavailableDates?: string[];
 }
