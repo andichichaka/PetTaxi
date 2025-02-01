@@ -2,7 +2,6 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, RelationI
 import { Post } from './post.entity';
 import { Booking } from '../booking/booking.entity';
 import { ServiceType } from './enum/service-type.enum';
-import { Exclude } from 'class-transformer';
 
 @Entity()
 export class Service {
@@ -21,7 +20,14 @@ export class Service {
   })
   serviceType: ServiceType;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('decimal', { 
+    precision: 10, 
+    scale: 2, 
+    transformer: {
+        to: (value: number) => value,
+        from: (value: string) => parseFloat(value),
+    },
+  })
   price: number;
 
   @Column('simple-array', { default: '' })

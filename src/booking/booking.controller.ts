@@ -18,6 +18,7 @@ import {
   import { AnimalType } from '../posts/enum/animal-type.enum';
   import { AnimalSize } from '../posts/enum/animal-size.enum';
 import { UsersService } from 'src/users/users.service';
+import { Public } from 'src/auth/public.decorator';
   
   @Controller('bookings')
   export class BookingController {
@@ -25,7 +26,7 @@ import { UsersService } from 'src/users/users.service';
         private usersService: UsersService
     ) {}
   
-    @Post()
+    @Post('create')
     @Roles(Role.User)
     async createBooking(@Body() createBookingDto: CreateBookingDto, @Req() req) {
       if (createBookingDto.serviceId) {
@@ -89,5 +90,10 @@ import { UsersService } from 'src/users/users.service';
         return this.bookingService.approveBooking(id);
     }
 
+    @Get('approve/:id')
+    @Roles(Role.Admin)
+    async getBooking(@Param('id') id: number) {
+        return this.bookingService.getBookingForApproval(id);
   }
+}
   

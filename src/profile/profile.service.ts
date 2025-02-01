@@ -18,15 +18,47 @@ export class ProfileService {
   ) {}
 
   async getProfile(userId: number): Promise<any> {
-    const user = this.userRepository.findOne({ where: { id: userId } });
+    const user = await this.userRepository.findOne({
+        where: { id: userId },
+        relations: ['posts', 'posts.services', 'posts.services.bookings'], // Include related entities
+    });
 
-    return{
-      username: (await user).username,
-      email: (await user).email,
-      description: (await user).description,
-      profilePicture: (await user).profilePic,
+    if (!user) {
+        throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    return {
+        username: user.username,
+        email: user.email,
+        description: user.description,
+        profilePicture: user.profilePic,
+        posts: user.posts.map((post) => ({
+            id: post.id,
+            imagesUrl: post.imagesUrl || null,
+            description: post.description,
+            animalType: post.animalType,
+            animalSizes: post.animalSizes,
+            user: {
+                email: post.user.email,
+                username: post.user.username,
+                profilePicture: post.user.profilePic,
+            },
+            services: post.services.map((service) => ({
+                id: service.id || null,
+                // bookings: service.bookings?.map((booking) => ({
+                //     id: booking?.id || null,
+                //     serviceId: booking?.service?.id || null,
+                //     userId: booking?.user?.id || null,
+                //     bookingDates: booking?.bookingDates || null,
+                //     notes: booking?.notes || null,
+                // })) || [],
+                serviceType: service.serviceType,
+                price: parseFloat(service.price.toString()),
+                unavailableDates: service.unavailableDates,
+            })),
+        })),
     };
-  }
+}
 
   async updateProfile(userId: number, updateProfileDto: UpdateProfileDto): Promise<any> {
     await this.userRepository.update(userId, updateProfileDto);

@@ -21,6 +21,7 @@ export class BookingService {
   ) {}
 
   async createBooking(createBookingDto: CreateBookingDto, user: User): Promise<Booking> {
+    console.log('createBookingDto', createBookingDto);
     const { serviceId, animalType, animalSize, bookingDates, notes } = createBookingDto;
   
     const service = await this.servicesRepository.findOne({ where: { id: serviceId }, relations: ['post'] });
@@ -44,7 +45,7 @@ export class BookingService {
       bookingDates: bookingDates || [],
       price: service.price,
       notes,
-      isApproved: service.serviceType === 'other' ? false : true, // Automatically approve non-'other' bookings
+      isApproved: false,
     });
   
     const savedBooking = await this.bookingRepository.save(booking);
@@ -138,34 +139,97 @@ export class BookingService {
   
   async notifyPostOwner(booking: Booking): Promise<void> {
     const postOwner = booking.service.post.user;
-  
+
     const approvalLink = `${process.env.APP_URL}/bookings/approve/${booking.id}`;
     await this.emailService.sendMail({
-      to: postOwner.email,
-      subject: 'Booking Approval Needed',
-      text: `
-        A booking request has been made for your post.
-        
-        Booking Details:
-        - User: ${booking.user.username}
-        - Email: ${booking.user.email}
-        - Dates: ${booking.bookingDates.join(', ') || 'Custom schedule (contact the user)'}
-        - Animal: ${booking.animalType} (${booking.animalSize})
-        
-        Please approve the booking using the following link:
-        ${approvalLink}
-      `,
+        to: postOwner.email,
+        subject: 'Booking Approval Needed',
+        html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
+            <!-- Header -->
+            <div style="background-color: #007bff; color: white; padding: 20px; text-align: center;">
+                <h1 style="margin: 0;">Booking Approval Needed</h1>
+                <p style="margin: 5px 0;">A booking request has been made for your post</p>
+            </div>
+            <!-- Body -->
+            <div style="padding: 20px;">
+                <p style="font-size: 16px;">Here are the details of the booking request:</p>
+                <ul style="list-style: none; padding: 0;">
+                    <li><strong>User:</strong> ${booking.user.username}</li>
+                    <li><strong>Email:</strong> ${booking.user.email}</li>
+                    <li><strong>Dates:</strong> ${booking.bookingDates.join(', ') || 'Custom schedule (contact the user)'}</li>
+                    <li><strong>Animal:</strong> ${booking.animalType} (${booking.animalSize})</li>
+                </ul>
+                <p style="font-size: 16px;">To approve this booking, click the button below:</p>
+                <div style="text-align: center; margin: 20px 0;">
+                    <a href="${approvalLink}" style="background-color: #007bff; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; display: inline-block; font-size: 16px;">Approve Booking</a>
+                </div>
+                <p style="font-size: 14px; color: #6c757d;">If you didn’t create this post or receive this email in error, please ignore it.</p>
+                <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;" />
+                <p style="font-size: 12px; color: #6c757d; text-align: center;">PetTaxi Team</p>
+            </div>
+        </div>
+        `,
     });
+}
+
+async approveBooking(id: number): Promise<Booking> {
+  const booking = await this.bookingRepository.findOne({
+      where: { id },
+      relations: ['service'],
+  });
+
+  if (!booking) {
+      throw new NotFoundException('Booking not found');
   }
 
-  async approveBooking(id: number): Promise<Booking> {
-    const booking = await this.bookingRepository.findOne({ where: { id }, relations: ['service'] });
-    if (!booking) {
-      throw new NotFoundException('Booking not found');
-    }
-  
-    booking.isApproved = true;
-    return this.bookingRepository.save(booking);
+  booking.isApproved = true;
+
+  const service = booking.service;
+
+  if (!service) {
+      throw new NotFoundException('Service associated with the booking not found');
   }
+
+  const updatedUnavailableDates = [
+      ...new Set([
+          ...service.unavailableDates,
+          ...booking.bookingDates,
+      ]),
+  ];
+
+  service.unavailableDates = updatedUnavailableDates;
+
+  await this.servicesRepository.save(service);
+
+  return this.bookingRepository.save(booking);
+}
+
+async getBookingForApproval(id: number): Promise<any> {
+    const booking = await this.bookingRepository.findOne({
+        where: { id },
+        relations: ['service', 'service.post', 'service.post.user', 'user'],
+    });
+
+    if (!booking) {
+        throw new NotFoundException('Booking not found');
+    }
+
+    return {
+        id: booking.id,
+        user: {
+            username: booking.user.username,
+            email: booking.user.email,
+        },
+        service: {
+            serviceType: booking.service.serviceType,
+            price: booking.service.price,
+        },
+        bookingDates: booking.bookingDates,
+        animalType: booking.animalType,
+        animalSize: booking.animalSize,
+        isApproved: booking.isApproved,
+    };
+}
   
 }
