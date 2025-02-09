@@ -3,6 +3,7 @@ import { Post } from '../posts/post.entity';
 import { Role } from 'src/roles/enum/role.enum';
 import { Booking } from 'src/booking/booking.entity';
 import { Code } from './code.entity';
+import { Review } from 'src/reviews/entities/review.entity';
 
 @Entity()
 export class User {
@@ -42,4 +43,7 @@ export class User {
 
   @OneToMany(() => Code, (code) => code.user, { cascade: false })
   codes: Code[];
+
+  @OneToMany(() => Review, (review) => review.user, { cascade: true })
+  reviews: Review[];
 }

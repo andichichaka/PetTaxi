@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 @Injectable()
 export class S3ImageStorageService {
