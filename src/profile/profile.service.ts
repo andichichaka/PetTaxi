@@ -20,7 +20,7 @@ export class ProfileService {
   async getProfile(userId: number): Promise<any> {
     const user = await this.userRepository.findOne({
         where: { id: userId },
-        relations: ['posts', 'posts.services', 'posts.services.bookings'], // Include related entities
+        relations: ['posts', 'posts.services', 'posts.services.bookings'],
     });
 
     if (!user) {
@@ -45,13 +45,6 @@ export class ProfileService {
             },
             services: post.services.map((service) => ({
                 id: service.id || null,
-                // bookings: service.bookings?.map((booking) => ({
-                //     id: booking?.id || null,
-                //     serviceId: booking?.service?.id || null,
-                //     userId: booking?.user?.id || null,
-                //     bookingDates: booking?.bookingDates || null,
-                //     notes: booking?.notes || null,
-                // })) || [],
                 serviceType: service.serviceType,
                 price: parseFloat(service.price.toString()),
                 unavailableDates: service.unavailableDates,
@@ -61,6 +54,7 @@ export class ProfileService {
 }
 
   async updateProfile(userId: number, updateProfileDto: UpdateProfileDto): Promise<any> {
+    console.log(updateProfileDto)
     await this.userRepository.update(userId, updateProfileDto);
     const user = this.userRepository.findOneBy({ id: userId });
     return{

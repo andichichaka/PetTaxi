@@ -1,4 +1,3 @@
-// src/profile/profile.module.ts
 import { Module } from '@nestjs/common';
 import { ProfileService } from './profile.service';
 import { ProfileController } from './profile.controller';
@@ -10,7 +9,7 @@ import { AuthModule } from 'src/auth/auth.module';
 import { JwtService } from '@nestjs/jwt';
 
 @Module({
-  imports: [UsersModule, TypeOrmModule, AuthModule], // Import UsersModule to make UserRepository available
+  imports: [UsersModule, TypeOrmModule, AuthModule],
   providers: [JwtService, ProfileService, User],
   controllers: [ProfileController]
 })

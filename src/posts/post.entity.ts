@@ -1,4 +1,3 @@
-// src/posts/post.entity.ts
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, Not, OneToMany } from 'typeorm';
 import { User } from '../users/user.entity';
 import { ServiceType } from './enum/service-type.enum';
@@ -6,6 +5,7 @@ import { AnimalType } from './enum/animal-type.enum';
 import { AnimalSize } from './enum/animal-size.enum';
 import { Service } from './service.entity';
 import { Booking } from 'src/booking/booking.entity';
+import { Review } from 'src/reviews/entities/review.entity';
 
 @Entity()
 export class Post {
@@ -34,6 +34,12 @@ export class Post {
   })
   animalType: AnimalType;
 
-  @Column('text', { array: true, nullable: false, default: '{}' })
+  @Column({
+    type: "enum",
+    enum: AnimalSize,
+    array: true, nullable: false, default: '{}' })
   animalSizes: AnimalSize[];
+
+  @OneToMany(() => Review, (review) => review.post, { cascade: true })
+  reviews: Review[];
 }

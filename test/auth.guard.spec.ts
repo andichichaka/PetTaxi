@@ -1,4 +1,3 @@
-// src/auth/auth.guard.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtAuthGuard } from '../src/auth/jwt-auth.guard';
 import { JwtService } from '@nestjs/jwt';

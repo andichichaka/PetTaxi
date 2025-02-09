@@ -128,7 +128,6 @@ async updatePostImages(postId: number, files: Express.Multer.File[]): Promise<Po
     throw new NotFoundException('Post not found');
   }
 
-  // Delete existing images from S3
   if (post.imagesUrl?.length) {
     for (const imageUrl of post.imagesUrl) {
       const key = this.extractS3Key(imageUrl);
@@ -136,28 +135,24 @@ async updatePostImages(postId: number, files: Express.Multer.File[]): Promise<Po
     }
   }
 
-  // 🔥 **Step 1: If no files, explicitly update DB to empty array**
   if (!files || files.length === 0) {
     console.log('No files provided. Removing all images from post.');
 
-    // ✅ **Force TypeORM to update immediately**
     await this.postsRepository
       .createQueryBuilder()
       .update(Post)
-      .set({ imagesUrl: [] }) // 🔥 **Explicitly setting imagesUrl to an empty array**
+      .set({ imagesUrl: null })
       .where("id = :id", { id: postId })
       .execute();
 
     console.log('Images removed. Fetching updated post...');
 
-    // 🔥 **Step 2: Force re-fetch from DB (clears cache)**
     const updatedPost = await this.postsRepository.findOne({ where: { id: postId } });
 
     console.log('Updated Post (After Delete):', updatedPost);
     return updatedPost;
   }
 
-  // 🔥 **Step 3: Upload new images**
   const imageUrls = await Promise.all(
     files.map((file, index) => {
       const newKey = `post-images/${postId}-${Date.now()}-${index}`;
@@ -165,7 +160,6 @@ async updatePostImages(postId: number, files: Express.Multer.File[]): Promise<Po
     }),
   );
 
-  // 🔥 **Step 4: Force TypeORM to update images with new ones**
   await this.postsRepository
     .createQueryBuilder()
     .update(Post)
@@ -173,7 +167,6 @@ async updatePostImages(postId: number, files: Express.Multer.File[]): Promise<Po
     .where("id = :id", { id: postId })
     .execute();
 
-  // 🔥 **Step 5: Refetch the post to confirm update**
   const finalPost = await this.postsRepository.findOne({ where: { id: postId } });
   console.log('Final Updated Post:', finalPost);
 
@@ -235,11 +228,11 @@ async remove(postId: number): Promise<void> {
         animalSizes: post.animalSizes,
         user: post.user,
         services: post.services.map(({ post, ...service }) => service),
+        reviews: post.reviews,
     }));
 
     return response;
 }
-
 
 async searchPosts(
   keywords?: string,
@@ -255,26 +248,22 @@ async searchPosts(
 
   const queryBuilder = this.postsRepository.createQueryBuilder('post');
 
-  // Join the related tables
   queryBuilder
-      .leftJoinAndSelect('post.user', 'user') // Include user details
-      .leftJoinAndSelect('post.services', 'service'); // Include services
+      .leftJoinAndSelect('post.user', 'user')
+      .leftJoinAndSelect('post.services', 'service');
 
-  // Filter by keywords in the post description
   if (keywords) {
       queryBuilder.andWhere('LOWER(post.description) LIKE :keywords', {
           keywords: `%${keywords.toLowerCase()}%`,
       });
   }
 
-  // Filter by service types using the services table
   if (serviceTypes && serviceTypes.length > 0) {
       queryBuilder.andWhere('service.serviceType IN (:...serviceTypes)', {
           serviceTypes,
       });
   }
 
-  // Filter by animal type
   if (animalType) {
       queryBuilder.andWhere('post.animalType = :animalType', {
           animalType,
@@ -284,8 +273,8 @@ async searchPosts(
   // Filter by animal sizes using PostgreSQL's array_overlap operator
   if (animalSizes && animalSizes.length > 0) {
       queryBuilder.andWhere(
-          `post.animalSizes && :animalSizes::text[]`,
-          { animalSizes: animalSizes } // Pass animalSizes as an array
+          `post.animalSizes && :animalSizes`,
+          { animalSizes: animalSizes }
       );
   }
 

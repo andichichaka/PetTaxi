@@ -1,11 +1,13 @@
 import {
+  BadRequestException,
     Body,
     Controller,
     Get,
     HttpCode,
     HttpStatus,
     Post,
-    Request
+    Request,
+    UnauthorizedException
   } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDTO } from './dto/login.dto';
@@ -30,12 +32,16 @@ import { Roles } from 'src/roles/decorator/roles.decorator';
     async signUp(@Body() signUpDto: SignUpDTO) {
         return this.authService.signUp(signUpDto.email, signUpDto.username, signUpDto.password, signUpDto.role ? signUpDto.role : 'user');
     }
-  
-    @Get('profile')
-    @Roles(Role.Admin, Role.User)
-    getProfile(@Request() req) {
-      return req.user;
-    }
+
+    @Public()
+    @Post('refresh')
+    async refresh(@Body() body: { refresh_token: string }) {
+        if (!body.refresh_token) {
+          throw new BadRequestException('Refresh token is required');
+       }
+       console.log(body.refresh_token)
+       return this.authService.refreshToken(body.refresh_token);
+     }
 
     @Public()
     @Post('verify-email')
@@ -46,5 +52,13 @@ import { Roles } from 'src/roles/decorator/roles.decorator';
       return this.authService.verifyEmail(email, code);
     }
   
+    @Public()
+    @Post('verify')
+    async verify(@Body() body: { access_token: string }) {
+        if (!body.access_token) {
+          throw new BadRequestException('Refresh token is required');
+       }
+       return this.authService.verifyToken(body.access_token);
+     }
   }
   
