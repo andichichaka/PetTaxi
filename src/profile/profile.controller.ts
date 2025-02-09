@@ -8,13 +8,11 @@ import { FileInterceptor } from '@nestjs/platform-express';
 export class ProfileController {
   constructor(private profileService: ProfileService) {}
 
-  @UseGuards(JwtAuthGuard)
   @Get()
   async getProfile(@Req() req) {
     return this.profileService.getProfile(req.user.sub);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Put('update')
   async updateProfile(@Req() req, @Body() updateProfileDto: UpdateProfileDto) {
      return this.profileService.updateProfile(req.user.sub, updateProfileDto);

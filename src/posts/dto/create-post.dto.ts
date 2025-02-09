@@ -1,4 +1,3 @@
-// src/posts/dto/create-post.dto.ts
 import { IsArray, IsEnum, IsNotEmpty, IsString, ArrayNotEmpty, ValidateNested } from 'class-validator';
 import { ServiceType } from '../enum/service-type.enum';
 import { AnimalType } from '../enum/animal-type.enum';
