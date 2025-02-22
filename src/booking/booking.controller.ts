@@ -8,6 +8,7 @@ import {
     Param,
     Put,
     Query,
+    Patch,
   } from '@nestjs/common';
   import { BookingService } from './booking.service';
   import { CreateBookingDto } from './dto/create-booking.dto';
@@ -19,6 +20,7 @@ import {
   import { AnimalSize } from '../posts/enum/animal-size.enum';
 import { UsersService } from 'src/users/users.service';
 import { Public } from 'src/auth/public.decorator';
+import { Booking } from './booking.entity';
   
   @Controller('bookings')
   export class BookingController {
@@ -76,12 +78,21 @@ import { Public } from 'src/auth/public.decorator';
   
       return this.bookingService.updateBooking(id, updateBookingDto);
     }
-  
-    @Delete(':id')
+
+    @Get('pending')
+    @Roles(Role.Admin)
+    async getPendingBookings(@Req() req) {
+      const result: Booking[] = await this.bookingService.getPendingBookings(req.user.sub);
+      console.log(result);
+      return result;
+    }
+
+    @Get('approved')
     @Roles(Role.User)
-    async deleteBooking(@Param('id') id: number, @Req() req) {
-      const user = await this.usersService.findUserById(req.user.sub);
-      return this.bookingService.deleteBooking(id, user);
+    async getApprovedBookings(@Req() req) {
+      const result: Booking[] = await this.bookingService.getApprovedBookings(req.user.sub);
+      console.log(result);
+      return result;
     }
 
     @Put('approve/:id')
@@ -90,10 +101,10 @@ import { Public } from 'src/auth/public.decorator';
         return this.bookingService.approveBooking(id);
     }
 
-    @Get('approve/:id')
-    @Roles(Role.Admin)
-    async getBooking(@Param('id') id: number) {
-        return this.bookingService.getBookingForApproval(id);
-  }
+    @Patch('disapprove/:id')
+    async disapproveBooking(@Param('id') id: number) {
+        await this.bookingService.deleteBooking(id);
+        return { message: 'Booking disapproved and deleted' };
+    }
 }
   

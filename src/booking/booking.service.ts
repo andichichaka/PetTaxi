@@ -121,17 +121,13 @@ export class BookingService {
   }
   
   
-  async deleteBooking(id: number, user: User): Promise<void> {
+  async deleteBooking(id: number): Promise<void> {
     const booking = await this.bookingRepository.findOne({
       where: { id },
       relations: ['user'],
     });
     if (!booking) {
       throw new NotFoundException(`Booking with ID ${id} not found`);
-    }
-  
-    if (booking.user.id !== user.id && user.role !== Role.Admin) {
-      throw new Error(`You do not have permission to delete this booking`);
     }
   
     await this.bookingRepository.delete(id);
@@ -230,6 +226,70 @@ async getBookingForApproval(id: number): Promise<any> {
         animalSize: booking.animalSize,
         isApproved: booking.isApproved,
     };
+}
+
+async getPendingBookings(id: number): Promise<any> {
+  const bookings = await this.bookingRepository.createQueryBuilder('booking')
+    .leftJoinAndSelect('booking.service', 'service')
+    .leftJoinAndSelect('service.post', 'post')
+    .leftJoinAndSelect('post.user', 'postOwner')
+    .leftJoinAndSelect('booking.user', 'user')
+    .where('postOwner.id = :id', { id })
+    .andWhere('booking.isApproved = false')
+    .orderBy('booking.createdAt', 'DESC')
+    .getMany();
+
+    return bookings.map((booking) => ({
+      ...booking,
+      service: booking.service && {
+        ...booking.service,
+        post: booking.service.post
+          ? {
+              id: booking.service.post.id,
+              imagesUrl: booking.service.post.imagesUrl ?? [],
+              description: booking.service.post.description ?? '',
+              animalType: booking.service.post.animalType ?? '',
+              animalSizes: booking.service.post.animalSizes ?? [],
+              user: booking.service.post.user ?? null,
+              services: booking.service.post.services ?? [],
+              reviews: booking.service.post.reviews ?? [],
+            }
+          : null,
+      },
+      createdAt: booking.createdAt.toISOString(),
+    }));
+}
+
+async getApprovedBookings(userId: number): Promise<any> {
+  const bookings = await this.bookingRepository.createQueryBuilder('booking')
+    .leftJoinAndSelect('booking.service', 'service')
+    .leftJoinAndSelect('service.post', 'post')
+    .leftJoinAndSelect('post.user', 'postOwner')
+    .leftJoinAndSelect('booking.user', 'user')
+    .where('user.id = :userId', { userId })
+    .andWhere('booking.isApproved = true')
+    .orderBy('booking.createdAt', 'DESC')
+    .getMany();
+
+  return bookings.map((booking) => ({
+    ...booking,
+    service: booking.service && {
+      ...booking.service,
+      post: booking.service.post
+        ? {
+            id: booking.service.post.id,
+            imagesUrl: booking.service.post.imagesUrl ?? [],
+            description: booking.service.post.description ?? '',
+            animalType: booking.service.post.animalType ?? '',
+            animalSizes: booking.service.post.animalSizes ?? [],
+            user: booking.service.post.user ?? null,
+            services: booking.service.post.services ?? [],
+            reviews: booking.service.post.reviews ?? [],
+          }
+        : null,
+    },
+    createdAt: booking.createdAt.toISOString(),
+  }));
 }
   
 }
