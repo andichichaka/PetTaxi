@@ -7,6 +7,7 @@ import { User } from 'src/users/user.entity';
 import { EmailService } from 'src/email/email.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Code } from 'src/users/code.entity';
+import { Role } from 'src/roles/enum/role.enum';
 
 @Injectable()
 export class AuthService {
@@ -54,6 +55,16 @@ export class AuthService {
   }
 
   async signUp(email: string, username: string, password: string, role?: string): Promise<any> {
+    const exist_user = await this.usersRepository.findOne({ where: { email } });
+
+    if(exist_user){
+      if (exist_user.isEmailVerified) {
+        throw new HttpException('Email already in use', HttpStatus.BAD_REQUEST);
+      } else {
+        await this.usersRepository.delete(exist_user.id);
+      }
+    }
+    
     const user = await this.usersService.createUser(email, username, password, role);
 
     if (!user) {
@@ -192,4 +203,34 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired access token');
     }
   }
+
+  async setRole(id: number, role: string): Promise<any> {
+    const validRole = this.validateRole(role);
+    const user = await this.usersRepository.findOne({ where: { id } });
+
+    if (!user) {
+        throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    user.role = validRole;
+    const newUser = await this.usersRepository.save(user);
+
+    const tokens = this.generateTokens(newUser)
+
+    return {
+        id: newUser.id,
+        access_token: (await tokens).accessToken,
+        refresh_token: (await tokens).refreshToken,
+        username: newUser.email,
+        email: newUser.username,
+        role: newUser.role,
+    };
+}
+
+private validateRole(role: string): Role {
+  if (!Object.values(Role).includes(role as Role)) {
+      throw new NotFoundException(`Invalid role: ${role}`);
+  }
+  return role as Role;
+}
 }

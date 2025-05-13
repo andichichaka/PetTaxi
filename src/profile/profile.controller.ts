@@ -33,9 +33,4 @@ export class ProfileController {
     console.log('User ID:', userId);
     return this.profileService.updateProfilePicture(userId, file);
   }
-
-  @Patch('set-role')
-  async setRole(@Req() req, @Body('role') role: string) {
-    return this.profileService.setRole(req.user.sub, role);
-  }
 }
