@@ -10,6 +10,10 @@ export class CreatePostDto {
   @IsNotEmpty()
   description: string;
 
+  @IsNotEmpty()
+  @Type(() => Number)
+  location: number;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateServiceDto)

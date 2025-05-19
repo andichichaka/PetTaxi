@@ -1,6 +1,6 @@
 import { BadRequestException, Inject, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DeepPartial, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Post } from './post.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -10,7 +10,7 @@ import { ServiceType } from './enum/service-type.enum';
 import { AnimalType } from './enum/animal-type.enum';
 import { AnimalSize } from './enum/animal-size.enum';
 import { Service } from './service.entity';
-import { plainToClass } from 'class-transformer';
+import { Location } from './location.entity';
 import { PostResponseDto } from './dto/post.response.dto';
 
 @Injectable()
@@ -20,51 +20,56 @@ export class PostsService {
     private postsRepository: Repository<Post>,
     @InjectRepository(Service)
     private servicesRepository: Repository<Service>,
+    @InjectRepository(Location)
+    private locationRepository: Repository<Location>,
     private s3Service: S3ImageStorageService,
   ) {}
 
-async create(createPostDto: CreatePostDto, user: User): Promise<any> {
-    const { description, services, animalType, animalSizes } = createPostDto;
-
+  async create(createPostDto: CreatePostDto, user: User): Promise<any> {
+    const { description, services, animalType, animalSizes, location } = createPostDto;
+  
+    const locationEntity = await this.locationRepository.findOne({ where: { id: location } });
+    if (!locationEntity) throw new NotFoundException('Location not found');
+  
     const post = this.postsRepository.create({
-        description,
-        animalType,
-        animalSizes,
-        user,
+      description,
+      animalType,
+      animalSizes,
+      user,
+      location: locationEntity,
     });
-
+  
     const savedPost = await this.postsRepository.save(post);
-
+  
     const savedServices = await Promise.all(
-        services.map((service) =>
-            this.servicesRepository.save({
-                serviceType: service.serviceType,
-                price: service.price,
-                unavailableDates: service.unavailableDates || [],
-                post: savedPost,
-            }),
-        ),
+      services.map(service =>
+        this.servicesRepository.save({
+          serviceType: service.serviceType,
+          price: service.price,
+          unavailableDates: service.unavailableDates || [],
+          post: savedPost,
+        })
+      )
     );
-
+  
     savedPost.services = savedServices;
-
-    const response: PostResponseDto = {
+  
+    return {
       id: savedPost.id,
       description: savedPost.description,
       animalType: savedPost.animalType,
       animalSizes: savedPost.animalSizes,
       user: savedPost.user,
-      services: savedServices.map((service) => ({
-        id: service.id,
-        bookings: service.bookings,
-        serviceType: service.serviceType,
-        price: service.price,
-        unavailableDates: service.unavailableDates,
-    })),
-  };
-
-  return response;
-}
+      location: savedPost.location,
+      services: savedServices.map(s => ({
+        id: s.id,
+        bookings: s.bookings,
+        serviceType: s.serviceType,
+        price: s.price,
+        unavailableDates: s.unavailableDates,
+      })),
+    };
+  }
 
  
   async addImagesToPost(postId: number, imageFiles: Express.Multer.File[]): Promise<Post> {
@@ -86,37 +91,36 @@ async create(createPostDto: CreatePostDto, user: User): Promise<any> {
 }
 
 
-async update(
-  id: number,
-  updatePostDto: UpdatePostDto,
-): Promise<Post> {
-  console.log(`Updating post with ID: ${id}`);
-
+async update(id: number, updatePostDto: UpdatePostDto): Promise<Post> {
   const existingPost = await this.postsRepository.findOne({
     where: { id },
     relations: ['services'],
   });
-
-  if (!existingPost) {
-    throw new NotFoundException('Post not found');
-  }
+  if (!existingPost) throw new NotFoundException('Post not found');
 
   if (updatePostDto.services) {
     await this.servicesRepository.delete({ post: existingPost });
 
-    const updatedServices = updatePostDto.services.map((serviceDto) =>
+    const updatedServices = updatePostDto.services.map(serviceDto =>
       this.servicesRepository.create({
         ...serviceDto,
         post: existingPost,
-      }),
+      })
     );
 
     await this.servicesRepository.save(updatedServices);
   }
 
+  let locationEntity = existingPost.location;
+  if (updatePostDto.location) {
+    locationEntity = updatePostDto.location;
+    if (!locationEntity) throw new NotFoundException('Location not found');
+  }
+
   const updatedPost = this.postsRepository.create({
     ...existingPost,
     ...updatePostDto,
+    location: locationEntity,
   });
 
   return this.postsRepository.save(updatedPost);
@@ -212,23 +216,20 @@ async remove(postId: number): Promise<void> {
   }
 
   async findAll(): Promise<PostResponseDto[]> {
-    console.log('Fetching all posts...');
-
     const posts = await this.postsRepository.find({
-        relations: ['services', 'user'],
+      relations: ['services', 'user', 'location'],
     });
-
-    console.log(`Found ${posts.length} posts.`);
-
+    
     const response = posts.map((post) => ({
-        id: post.id,
-        imagesUrl: post.imagesUrl,
-        description: post.description,
-        animalType: post.animalType,
-        animalSizes: post.animalSizes,
-        user: post.user,
-        services: post.services.map(({ post, ...service }) => service),
-        reviews: post.reviews,
+      id: post.id,
+      imagesUrl: post.imagesUrl,
+      description: post.description,
+      animalType: post.animalType,
+      animalSizes: post.animalSizes,
+      user: post.user,
+      location: post.location,
+      services: post.services.map(({ post, ...service }) => service),
+      reviews: post.reviews,
     }));
 
     return response;
@@ -238,44 +239,53 @@ async searchPosts(
   keywords?: string,
   serviceTypes?: ServiceType[],
   animalType?: AnimalType,
-  animalSizes?: AnimalSize[]
+  animalSizes?: AnimalSize[],
+  locationId?: number
 ): Promise<Post[]> {
   console.log('Searching posts with provided filters...');
 
-  if(!keywords && !serviceTypes && !animalType && !animalSizes) {
-      throw new BadRequestException('At least one search filter must be provided.');
+  if (!keywords && !serviceTypes && !animalType && !animalSizes && !locationId) {
+    throw new BadRequestException('At least one search filter must be provided.');
   }
 
-  const queryBuilder = this.postsRepository.createQueryBuilder('post');
+  const queryBuilder = this.postsRepository.createQueryBuilder('post')
+    .leftJoinAndSelect('post.user', 'user')
+    .leftJoinAndSelect('post.services', 'service')
+    .leftJoinAndSelect('post.location', 'location');
 
-  queryBuilder
-      .leftJoinAndSelect('post.user', 'user')
-      .leftJoinAndSelect('post.services', 'service');
+  queryBuilder.leftJoinAndSelect('post.services', 'allServices');
 
   if (keywords) {
-      queryBuilder.andWhere('LOWER(post.description) LIKE :keywords', {
-          keywords: `%${keywords.toLowerCase()}%`,
-      });
+    queryBuilder.andWhere('LOWER(post.description) LIKE :keywords', {
+      keywords: `%${keywords.toLowerCase()}%`,
+    });
   }
 
   if (serviceTypes && serviceTypes.length > 0) {
-      queryBuilder.andWhere('service.serviceType IN (:...serviceTypes)', {
-          serviceTypes,
-      });
+    queryBuilder.andWhere((qb) => {
+      const subQuery = qb
+        .subQuery()
+        .select('service.postId')
+        .from('service', 'service')
+        .where('service.serviceType IN (:...serviceTypes)')
+        .getQuery();
+
+      return `post.id IN ${subQuery}`;
+    }, { serviceTypes });
   }
 
   if (animalType) {
-      queryBuilder.andWhere('post.animalType = :animalType', {
-          animalType,
-      });
+    queryBuilder.andWhere('post.animalType = :animalType', { animalType });
   }
 
-  // Filter by animal sizes using PostgreSQL's array_overlap operator
   if (animalSizes && animalSizes.length > 0) {
-      queryBuilder.andWhere(
-          `post.animalSizes && :animalSizes`,
-          { animalSizes: animalSizes }
-      );
+      queryBuilder.andWhere(`post.animalSizes && :animalSizes`, {
+      animalSizes: animalSizes,
+    });
+  }
+
+  if (locationId) {
+    queryBuilder.andWhere('location.id = :locationId', { locationId });
   }
 
   const posts = await queryBuilder.getMany();
@@ -283,4 +293,12 @@ async searchPosts(
   return posts;
 }
 
+async fetchLocations(): Promise<Location[]> {
+  return await this.locationRepository.find({ order: { name: 'ASC' } });
 }
+
+}
+function leftJoinAndSelect(arg0: string, arg1: string) {
+  throw new Error('Function not implemented.');
+}
+

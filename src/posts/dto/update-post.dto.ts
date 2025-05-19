@@ -7,7 +7,7 @@ import {
   ArrayNotEmpty,
   IsNotEmpty,
 } from 'class-validator';
-import { ServiceType } from '../enum/service-type.enum';
+import { Location } from '../location.entity';
 import { AnimalType } from '../enum/animal-type.enum';
 import { AnimalSize } from '../enum/animal-size.enum';
 import { Type } from 'class-transformer';
@@ -17,6 +17,10 @@ export class UpdatePostDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  location?: Location;
 
   @IsArray()
   @ValidateNested({ each: true })

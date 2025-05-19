@@ -1,6 +1,7 @@
 import * as dotenv from 'dotenv';
 import { Booking } from 'src/booking/booking.entity';
 import { Post } from 'src/posts/post.entity';
+import { Location } from 'src/posts/location.entity'
 import { Service } from 'src/posts/service.entity';
 import { Review } from 'src/reviews/entities/review.entity';
 import { Code } from 'src/users/code.entity';
@@ -19,7 +20,7 @@ const connectDB = new DataSource({
   username: process.env.PS_USER,
   password: process.env.PS_PASS,
   migrations: [__dirname + '/../migrations/*.ts'],
-  entities: [User, Post, Service, Booking, Code, Review],
+  entities: [User, Post, Service, Booking, Code, Review, Location],
 });
 
 export const initializeDB = async () => {

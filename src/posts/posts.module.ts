@@ -8,9 +8,10 @@ import { UsersModule } from 'src/users/users.module';
 import { AuthModule } from 'src/auth/auth.module';
 import { JwtService } from '@nestjs/jwt';
 import { Service } from './service.entity';
+import { Location } from './location.entity'
 
 @Module({
-  imports: [AuthModule, UsersModule, TypeOrmModule.forFeature([Post, Service])],
+  imports: [AuthModule, UsersModule, TypeOrmModule.forFeature([Post, Service, Location])],
   providers: [JwtService, PostsService, S3ImageStorageService],
   controllers: [PostsController],
   exports: [PostsService, TypeOrmModule.forFeature([Post]), TypeOrmModule.forFeature([Service])],
