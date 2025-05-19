@@ -1,5 +1,5 @@
 import { Controller, Post, Body, UseGuards, Req, Put, Param, Delete, UploadedFiles, UseInterceptors, Get, Query, Patch, UploadedFile } from '@nestjs/common';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { Post as PostEntity } from './post.entity';
 
 import { PostsService } from './posts.service';
@@ -14,6 +14,7 @@ import { Role } from '../roles/enum/role.enum';
 import { ServiceType } from './enum/service-type.enum';
 import { AnimalType } from './enum/animal-type.enum';
 import { AnimalSize } from './enum/animal-size.enum';
+import { Location } from './location.entity'
 
 @Controller('posts')
 export class PostsController {
@@ -89,23 +90,29 @@ async updatePost(
     return this.postsService.findAll();
   }
 
-  @Get('search')
+@Get('search')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.Admin, Role.User)
 async searchPosts(
   @Query('keywords') keywords?: string,
   @Query('serviceTypes') serviceTypes?: string[],
   @Query('animalType') animalType?: string,
-  @Query('animalSizes') animalSizes?: string[]
+  @Query('animalSizes') animalSizes?: string[],
+  @Query('locationId') locationId?: number
 ): Promise<PostEntity[]> {
   return this.postsService.searchPosts(
     keywords,
     serviceTypes ? (Array.isArray(serviceTypes) ? serviceTypes.map(type => type as ServiceType) : [serviceTypes as ServiceType]) : undefined,
     animalType ? animalType as AnimalType : undefined,
-    animalSizes ? (Array.isArray(animalSizes) ? animalSizes.map(size => size as AnimalSize) : [animalSizes as AnimalSize]) : undefined
+    animalSizes ? (Array.isArray(animalSizes) ? animalSizes.map(size => size as AnimalSize) : [animalSizes as AnimalSize]) : undefined,
+    locationId
   );
 }
 
 @Patch(':postId/images')
 @UseInterceptors(FilesInterceptor('files'))
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.Admin, Role.User)
 async updatePostImages(
   @Param('postId') postId: number,
   @UploadedFiles() files?: Express.Multer.File[],
@@ -117,5 +124,12 @@ async updatePostImages(
 async deletePost(@Param('postId') postId: number): Promise<{ message: string }> {
   await this.postsService.remove(postId);
   return { message: 'Post successfully deleted.' };
+}
+
+@Get('fetchLocations')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.Admin, Role.User)
+async getAllLocations(): Promise<Location[]> {
+  return this.postsService.fetchLocations();
 }
 }

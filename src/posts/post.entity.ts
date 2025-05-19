@@ -1,10 +1,9 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, Not, OneToMany } from 'typeorm';
 import { User } from '../users/user.entity';
-import { ServiceType } from './enum/service-type.enum';
+import { Location } from './location.entity';
 import { AnimalType } from './enum/animal-type.enum';
 import { AnimalSize } from './enum/animal-size.enum';
 import { Service } from './service.entity';
-import { Booking } from 'src/booking/booking.entity';
 import { Review } from 'src/reviews/entities/review.entity';
 
 @Entity()
@@ -21,6 +20,9 @@ export class Post {
 
   @Column('text')
   description: string;
+
+  @ManyToOne(() => Location, (location) => location.posts, { eager: true })
+  location: Location;
 
   @ManyToOne(() => User, (user) => user.posts, { onDelete: 'CASCADE', eager: true })
   user: User;

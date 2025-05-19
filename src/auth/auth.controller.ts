@@ -5,7 +5,9 @@ import {
     Get,
     HttpCode,
     HttpStatus,
+    Patch,
     Post,
+    Req,
     Request,
     UnauthorizedException
   } from '@nestjs/common';
@@ -13,15 +15,13 @@ import { AuthService } from './auth.service';
 import { LoginDTO } from './dto/login.dto';
 import { SignUpDTO } from './dto/sign-up.dto';
 import { Public } from './public.decorator';
-import { Role } from 'src/roles/enum/role.enum';
-import { Roles } from 'src/roles/decorator/roles.decorator';
   
   @Controller('auth')
   export class AuthController {
     constructor(private authService: AuthService) {}
   
     @Public()
-    @HttpCode(HttpStatus.OK)
+    //@HttpCode(HttpStatus.OK)
     @Post('login')
     signIn(@Body() signInDto: LoginDTO) {
       return this.authService.signIn(signInDto.username, signInDto.password);
@@ -60,5 +60,10 @@ import { Roles } from 'src/roles/decorator/roles.decorator';
        }
        return this.authService.verifyToken(body.access_token);
      }
+
+    @Patch('set-role')
+    async setRole(@Req() req, @Body('role') role: string) {
+      return this.authService.setRole(req.user.sub, role);
+    }
   }
   

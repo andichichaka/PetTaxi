@@ -43,6 +43,7 @@ export class ProfileService {
                 username: post.user.username,
                 profilePicture: post.user.profilePic,
             },
+            location: post.location,
             services: post.services.map((service) => ({
                 id: service.id || null,
                 serviceType: service.serviceType,
@@ -100,35 +101,5 @@ export class ProfileService {
     const region = process.env.AWS_REGION;
     return url.replace(`https://${bucketName}.s3.${region}.amazonaws.com/`, '');
   }
-
-  async setRole(id: number, role: string): Promise<any> {
-    const validRole = this.validateRole(role);
-    const user = await this.userRepository.findOne({ where: { id } });
-
-    if (!user) {
-        throw new NotFoundException(`User with ID ${id} not found`);
-    }
-
-    user.role = validRole;
-    const newUser = await this.userRepository.save(user);
-
-    const payload = { username: newUser.username, sub: newUser.id, roles: newUser.role };
-    const token = await this.jwtService.signAsync(payload, { secret: process.env.JWT_SECRET });
-
-    return {
-        id: newUser.id,
-        access_token: token,
-        username: newUser.email,
-        email: newUser.username,
-        role: newUser.role,
-    };
-}
-
-private validateRole(role: string): Role {
-  if (!Object.values(Role).includes(role as Role)) {
-      throw new NotFoundException(`Invalid role: ${role}`);
-  }
-  return role as Role;
-}
 
 }
