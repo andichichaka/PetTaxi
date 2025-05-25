@@ -7,6 +7,9 @@ import { S3ImageStorageService } from 'src/image-storage/services/s3-image-stora
 import { Role } from 'src/roles/enum/role.enum';
 import { access } from 'fs';
 import { JwtService } from '@nestjs/jwt';
+import { GetProfileResponseDto } from './dto/response/get-profile-response.dto';
+import { plainToInstance } from 'class-transformer';
+import { UpdateProfileResponseDto } from './dto/response/update-profile.response.dto';
 
 @Injectable()
 export class ProfileService {
@@ -17,7 +20,7 @@ export class ProfileService {
     private jwtService: JwtService,
   ) {}
 
-  async getProfile(userId: number): Promise<any> {
+  async getProfile(userId: number): Promise<GetProfileResponseDto> {
     const user = await this.userRepository.findOne({
         where: { id: userId },
         relations: ['posts', 'posts.services', 'posts.services.bookings'],
@@ -27,7 +30,8 @@ export class ProfileService {
         throw new NotFoundException(`User with ID ${userId} not found`);
     }
 
-    return {
+    return plainToInstance(GetProfileResponseDto, {
+        id: user.id,
         username: user.username,
         email: user.email,
         description: user.description,
@@ -39,6 +43,7 @@ export class ProfileService {
             animalType: post.animalType,
             animalSizes: post.animalSizes,
             user: {
+                id: post.user.id,
                 email: post.user.email,
                 username: post.user.username,
                 profilePicture: post.user.profilePic,
@@ -51,11 +56,10 @@ export class ProfileService {
                 unavailableDates: service.unavailableDates,
             })),
         })),
-    };
+    });
 }
 
-  async updateProfile(userId: number, updateProfileDto: UpdateProfileDto): Promise<any> {
-    console.log(updateProfileDto)
+  async updateProfile(userId: number, updateProfileDto: UpdateProfileDto): Promise<UpdateProfileResponseDto> {
     await this.userRepository.update(userId, updateProfileDto);
     const user = this.userRepository.findOneBy({ id: userId });
     return{

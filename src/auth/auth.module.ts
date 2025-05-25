@@ -6,8 +6,8 @@ import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from 'src/users/user.entity';
-import { EmailService } from 'src/email/email.service';
+import { User } from '../users/user.entity';
+import { EmailService } from '../email/email.service';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
