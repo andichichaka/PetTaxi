@@ -4,14 +4,12 @@ import { LessThan, MoreThan, Repository } from 'typeorm';
 import { User } from './user.entity';
 import * as bcrypt from 'bcrypt';
 import { Role } from 'src/roles/enum/role.enum';
-import { S3ImageStorageService } from 'src/image-storage/services/s3-image-storage.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
-    private s3ImageStorageService: S3ImageStorageService,
   ) {}
 
   async createUser(email: string, username: string, password: string, role: string): Promise<User | null> {
