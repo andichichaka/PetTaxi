@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, RelationId } from 'typeorm';
 import { Post } from './post.entity';
-import { Booking } from '../booking/booking.entity';
-import { ServiceType } from './enum/service-type.enum';
+import { Booking } from '../../booking/booking.entity';
+import { ServiceType } from '../enum/service-type.enum';
 
 @Entity()
 export class Service {

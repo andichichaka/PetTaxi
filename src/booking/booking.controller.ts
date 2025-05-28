@@ -51,7 +51,7 @@ export class BookingController {
   }
 
   @Put(':id')
-  @Roles(Role.Admin)
+  @Roles(Role.User)
   async updateBooking(
     @Param('id') id: number,
     @Body() dto: UpdateBookingDto,
@@ -75,12 +75,13 @@ export class BookingController {
   }
 
   @Put('approve/:id')
-  @Roles(Role.Admin, Role.User)
+  @Roles(Role.Admin)
   async approveBooking(@Param('id') id: number) {
     return this.bookingService.approveBooking(id);
   }
 
   @Patch('disapprove/:id')
+  @Roles(Role.Admin, Role.User)
   async disapproveBooking(@Param('id') id: number) {
     await this.bookingService.deleteBooking(id);
     return { message: 'Booking disapproved and deleted' };

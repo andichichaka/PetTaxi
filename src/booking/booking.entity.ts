@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
 import { User } from '../users/user.entity';
-import { Service } from '../posts/service.entity';
+import { Service } from '../posts/entities/service.entity';
 import { AnimalType } from '../posts/enum/animal-type.enum';
 import { AnimalSize } from '../posts/enum/animal-size.enum';
 

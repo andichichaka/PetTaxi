@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/users/user.entity';
 import { Repository } from 'typeorm';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { S3ImageStorageService } from 'src/image-storage/services/s3-image-storage.service';
+import { S3ImageStorageService } from 'src/image-storage/s3-image-storage.service';
 import { Role } from 'src/roles/enum/role.enum';
 import { access } from 'fs';
 import { JwtService } from '@nestjs/jwt';

@@ -1,6 +1,6 @@
 import { User } from 'src/users/user.entity';
-import { Service } from '../../service.entity';
-import { Location } from '../../location.entity';
+import { Service } from '../../entities/service.entity';
+import { Location } from '../../entities/location.entity';
 
 export class PostResponseDto {
     id: number;

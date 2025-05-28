@@ -1,11 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BookingController } from './booking.controller';
-import { BookingService } from './booking.service';
-import { UsersService } from '../users/users.service';
-import { CreateBookingDto } from './dto/create-booking.dto';
-import { UpdateBookingDto } from './dto/update-booking.dto';
-import { AnimalType } from '../posts/enum/animal-type.enum';
-import { AnimalSize } from '../posts/enum/animal-size.enum';
+import { BookingController } from '../src/booking/booking.controller';
+import { BookingService } from '../src/booking/booking.service';
+import { UsersService } from '../src/users/users.service';
+import { CreateBookingDto } from '../src/booking/dto/create-booking.dto';
+import { UpdateBookingDto } from '../src/booking/dto/update-booking.dto';
+import { AnimalType } from '../src/posts/enum/animal-type.enum';
+import { AnimalSize } from '../src/posts/enum/animal-size.enum';
 
 describe('BookingController', () => {
   let controller: BookingController;

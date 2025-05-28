@@ -1,8 +1,8 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, Not, OneToMany } from 'typeorm';
-import { User } from '../users/user.entity';
+import { User } from '../../users/user.entity';
 import { Location } from './location.entity';
-import { AnimalType } from './enum/animal-type.enum';
-import { AnimalSize } from './enum/animal-size.enum';
+import { AnimalType } from '../enum/animal-type.enum';
+import { AnimalSize } from '../enum/animal-size.enum';
 import { Service } from './service.entity';
 import { Review } from 'src/reviews/entities/review.entity';
 

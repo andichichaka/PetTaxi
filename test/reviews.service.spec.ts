@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ReviewService } from './reviews.service';
+import { ReviewService } from '../src/reviews/reviews.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Review } from './entities/review.entity';
-import { Post } from '../posts/post.entity';
-import { User } from '../users/user.entity';
+import { Review } from '../src/reviews/entities/review.entity';
+import { Post } from '../src/posts/entities/post.entity';
+import { User } from '../src/users/user.entity';
 import { NotFoundException } from '@nestjs/common';
 
 describe('ReviewService', () => {

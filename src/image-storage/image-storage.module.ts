@@ -1,5 +1,5 @@
 import { Module, Global } from '@nestjs/common';
-import { S3ImageStorageService } from './services/s3-image-storage.service';
+import { S3ImageStorageService } from './s3-image-storage.service';
 import { PostsModule } from 'src/posts/posts.module';
 
 @Global()
