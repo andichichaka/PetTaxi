@@ -11,7 +11,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
 import { User } from '../users/user.entity';
-import { EmailService } from '../email/email.service';
+import { EmailService } from '../utilities/email.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Code } from '../users/code.entity';
 import { Role } from '../roles/enum/role.enum';

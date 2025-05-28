@@ -1,6 +1,6 @@
 // post-snapshot.dto.ts
 import { Expose } from 'class-transformer';
-import { Location } from '../../../posts/location.entity';
+import { Location } from '../../../posts/entities/location.entity';
 
 export class PostSnapshotDto {
   @Expose()

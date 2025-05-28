@@ -14,7 +14,7 @@ import {
   Patch,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { Post as PostEntity } from './post.entity';
+import { Post as PostEntity } from './entities/post.entity';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -26,7 +26,7 @@ import { Role } from '../roles/enum/role.enum';
 import { ServiceType } from './enum/service-type.enum';
 import { AnimalType } from './enum/animal-type.enum';
 import { AnimalSize } from './enum/animal-size.enum';
-import { Location } from './location.entity';
+import { Location } from './entities/location.entity';
 import { PostResponseDto } from './dto/response/post.response.dto';
 import { PostCreateResponseDto } from './dto/response/post-create-response.dto';
 

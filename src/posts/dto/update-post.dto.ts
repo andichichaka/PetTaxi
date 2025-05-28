@@ -7,7 +7,7 @@ import {
   ArrayNotEmpty,
   IsNotEmpty,
 } from 'class-validator';
-import { Location } from '../location.entity';
+import { Location } from '../entities/location.entity';
 import { AnimalType } from '../enum/animal-type.enum';
 import { AnimalSize } from '../enum/animal-size.enum';
 import { Type } from 'class-transformer';

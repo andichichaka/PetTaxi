@@ -1,18 +1,18 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PostsController } from './posts.controller';
-import { PostsService } from './posts.service';
-import { UsersService } from '../users/users.service';
-import { CreatePostDto } from './dto/create-post.dto';
-import { UpdatePostDto } from './dto/update-post.dto';
-import { Post as PostEntity } from './post.entity';
-import { PostResponseDto } from './dto/response/post.response.dto';
-import { Location } from './location.entity';
-import { AnimalSize } from './enum/animal-size.enum';
-import { AnimalType } from './enum/animal-type.enum';
-import { ServiceType } from './enum/service-type.enum';
-import { User } from '../users/user.entity';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { RolesGuard } from '../roles/roles.guard';
+import { PostsController } from '../src/posts/posts.controller';
+import { PostsService } from '../src/posts/posts.service';
+import { UsersService } from '../src/users/users.service';
+import { CreatePostDto } from '../src/posts/dto/create-post.dto';
+import { UpdatePostDto } from '../src/posts/dto/update-post.dto';
+import { Post as PostEntity } from '../src/posts/entities/post.entity';
+import { PostResponseDto } from '../src/posts/dto/response/post.response.dto';
+import { Location } from '../src/posts/entities/location.entity';
+import { AnimalSize } from '../src/posts/enum/animal-size.enum';
+import { AnimalType } from '../src/posts/enum/animal-type.enum';
+import { ServiceType } from '../src/posts/enum/service-type.enum';
+import { User } from '../src/users/user.entity';
+import { JwtAuthGuard } from '../src/auth/jwt-auth.guard';
+import { RolesGuard } from '../src/roles/roles.guard';
 
 describe('PostsController', () => {
   let controller: PostsController;

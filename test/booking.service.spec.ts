@@ -1,17 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BookingService } from './booking.service';
+import { BookingService } from '../src/booking/booking.service';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Booking } from './booking.entity';
-import { Service } from '../posts/service.entity';
-import { EmailService } from '../email/email.service';
-import { CreateBookingDto } from './dto/create-booking.dto';
-import { UpdateBookingDto } from './dto/update-booking.dto';
+import { Booking } from '../src/booking/booking.entity';
+import { Service } from '../src/posts/entities/service.entity';
+import { EmailService } from '../src/utilities/email.service';
+import { CreateBookingDto } from '../src/booking/dto/create-booking.dto';
+import { UpdateBookingDto } from '../src/booking/dto/update-booking.dto';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
-import { User } from '../users/user.entity';
-import { ServiceType } from '../posts/enum/service-type.enum';
-import { AnimalType } from '../posts/enum/animal-type.enum';
-import { AnimalSize } from '../posts/enum/animal-size.enum';
+import { User } from '../src/users/user.entity';
+import { ServiceType } from '../src/posts/enum/service-type.enum';
+import { AnimalType } from '../src/posts/enum/animal-type.enum';
+import { AnimalSize } from '../src/posts/enum/animal-size.enum';
 
 describe('BookingService', () => {
   let service: BookingService;

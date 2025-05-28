@@ -6,7 +6,7 @@ import {
     CreateDateColumn,
   } from 'typeorm';
   import { User } from '../../users/user.entity';
-  import { Post } from '../../posts/post.entity';
+  import { Post } from '../../posts/entities/post.entity';
   
   @Entity()
   export class Review {

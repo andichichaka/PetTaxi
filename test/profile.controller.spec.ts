@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ProfileController } from './profile.controller';
-import { ProfileService } from './profile.service';
-import { UpdateProfileDto } from './dto/update-profile.dto';
-import { Role } from '../roles/enum/role.enum';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { RolesGuard } from '../roles/roles.guard';
+import { ProfileController } from '../src/profile/profile.controller';
+import { ProfileService } from '../src/profile/profile.service';
+import { UpdateProfileDto } from '../src/profile/dto/update-profile.dto';
+import { Role } from '../src/roles/enum/role.enum';
+import { JwtAuthGuard } from '../src/auth/jwt-auth.guard';
+import { RolesGuard } from '../src/roles/roles.guard';
 
 describe('ProfileController', () => {
   let controller: ProfileController;

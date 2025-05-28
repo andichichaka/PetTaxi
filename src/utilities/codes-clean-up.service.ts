@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { LessThan, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Code } from './code.entity';
+import { Code } from '../users/code.entity';
 
 @Injectable()
 export class CodesCleanupService {

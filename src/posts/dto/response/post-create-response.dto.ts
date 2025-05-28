@@ -1,6 +1,6 @@
 import { Expose, Type } from 'class-transformer';
 import { User } from 'src/users/user.entity';
-import { Location } from '../../location.entity';
+import { Location } from '../../entities/location.entity';
 import { ServiceSnapshotDto } from './service-snapshot.dto';
 
 export class PostCreateResponseDto {
