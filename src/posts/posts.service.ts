@@ -5,16 +5,15 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Post } from './post.entity';
+import { Post } from './entities/post.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { User } from 'src/users/user.entity';
-import { S3ImageStorageService } from 'src/image-storage/services/s3-image-storage.service';
-import { Service } from './service.entity';
-import { Location } from './location.entity';
+import { S3ImageStorageService } from 'src/image-storage/s3-image-storage.service';
+import { Service } from './entities/service.entity';
+import { Location } from './entities/location.entity';
 import { PostResponseDto } from './dto/response/post.response.dto';
 import { PostCreateResponseDto } from './dto/response/post-create-response.dto';
-import { plainToInstance } from 'class-transformer';
 import { ServiceType } from './enum/service-type.enum';
 import { AnimalType } from './enum/animal-type.enum';
 import { AnimalSize } from './enum/animal-size.enum';
@@ -39,7 +38,6 @@ export class PostsService {
   
     const post = this.postsRepository.create({
       description,
-      services,
       animalType,
       animalSizes,
       user,

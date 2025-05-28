@@ -1,8 +1,8 @@
 import * as dotenv from 'dotenv';
 import { Booking } from 'src/booking/booking.entity';
-import { Post } from 'src/posts/post.entity';
-import { Location } from 'src/posts/location.entity'
-import { Service } from 'src/posts/service.entity';
+import { Post } from 'src/posts/entities/post.entity';
+import { Location } from 'src/posts/entities/location.entity'
+import { Service } from 'src/posts/entities/service.entity';
 import { Review } from 'src/reviews/entities/review.entity';
 import { Code } from 'src/users/code.entity';
 import { User } from 'src/users/user.entity';

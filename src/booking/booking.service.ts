@@ -9,9 +9,9 @@ import { Booking } from './booking.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { BookingListResponseDto } from './dto/response/booking-list-response.dto';
-import { Service } from 'src/posts/service.entity';
+import { Service } from 'src/posts/entities/service.entity';
 import { User } from 'src/users/user.entity';
-import { EmailService } from 'src/email/email.service';
+import { EmailService } from 'src/utilities/email.service';
 import { plainToInstance } from 'class-transformer';
 
 @Injectable()
@@ -37,12 +37,6 @@ export class BookingService {
     });
     if (!service) {
       throw new NotFoundException(`Service with ID ${serviceId} not found`);
-    }
-
-    if (service.serviceType === 'other' && bookingDates) {
-      throw new BadRequestException(
-        `'other' service type does not allow booking dates`,
-      );
     }
 
     if (
@@ -124,13 +118,10 @@ export class BookingService {
     }
 
     if (updateBookingDto.bookingDates) {
-      if (service.serviceType === 'other') {
-        throw new Error(`'other' service type does not allow booking dates`);
-      }
-
       const invalidDates = updateBookingDto.bookingDates.filter((date) =>
         service.unavailableDates.includes(date),
       );
+      
       if (invalidDates.length > 0) {
         throw new Error(
           `The following dates are unavailable: ${invalidDates.join(', ')}`,
